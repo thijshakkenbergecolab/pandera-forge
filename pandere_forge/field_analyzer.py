@@ -1,0 +1,94 @@
+"""
+Field analysis utilities for extracting column properties
+"""
+
+from typing import Any, Dict, List, Optional, Tuple
+import pandas as pd
+from pandas import DataFrame
+
+
+class FieldAnalyzer:
+    """Analyzes DataFrame columns to extract properties for Field generation"""
+
+    @staticmethod
+    def analyze_column(df: DataFrame, column_name: str) -> Dict[str, Any]:
+        """
+        Analyze a column and return its properties.
+
+        Returns:
+            Dict containing:
+                - is_unique: bool
+                - is_nullable: bool
+                - min_value: numeric or None
+                - max_value: numeric or None
+                - examples: List[str]
+                - distinct_count: int
+        """
+        column = df[column_name]
+        properties = {}
+
+        # Check uniqueness
+        try:
+            properties["is_unique"] = column.nunique() == len(df)
+            properties["distinct_count"] = column.nunique()
+        except TypeError:  # handles unhashable types
+            properties["is_unique"] = False
+            properties["distinct_count"] = None
+
+        # Check nullability
+        properties["is_nullable"] = column.isnull().any()
+
+        # Get min/max for numeric types
+        if pd.api.types.is_numeric_dtype(column):
+            min_val = column.min()
+            max_val = column.max()
+            # Only set if not NaN
+            properties["min_value"] = min_val if pd.notna(min_val) else None
+            properties["max_value"] = max_val if pd.notna(max_val) else None
+        else:
+            properties["min_value"] = None
+            properties["max_value"] = None
+
+        # Get examples
+        properties["examples"] = FieldAnalyzer._get_examples(column)
+
+        return properties
+
+    @staticmethod
+    def _get_examples(column: pd.Series, num_samples: int = 5) -> List[str]:
+        """Get the most common values as examples"""
+        try:
+            # Convert to string for consistent handling
+            str_column = column.astype(str)
+            value_counts = str_column.value_counts()
+            top_values = value_counts.nlargest(num_samples)
+            return top_values.index.tolist()
+        except (TypeError, ValueError):
+            # If conversion fails, try to get a few non-null samples
+            try:
+                samples = column.dropna().head(num_samples)
+                return [str(s) for s in samples]
+            except:
+                return []
+
+    @staticmethod
+    def format_field_properties(properties: Dict[str, Any]) -> str:
+        """Format properties dict into Field() parameter string"""
+        field_params = []
+
+        if properties.get("is_unique"):
+            field_params.append("unique=True")
+
+        if properties.get("is_nullable"):
+            field_params.append("nullable=True")
+
+        # Add min/max for numeric types
+        if properties.get("min_value") is not None and properties.get("max_value") is not None:
+            # Check if values are finite
+            min_val = properties["min_value"]
+            max_val = properties["max_value"]
+            if pd.notna(min_val) and pd.notna(max_val):
+                field_params.insert(0, f"ge={min_val}")
+                field_params.insert(1, f"le={max_val}")
+
+        return ", ".join(field_params) if field_params else ""
