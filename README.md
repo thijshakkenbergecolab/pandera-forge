@@ -2,6 +2,10 @@
 
 **Pandera Forge** is a deterministic generator for [Pandera](https://pandera.readthedocs.io/) DataFrameModels from pandas DataFrames. It automatically creates exhaustive, type-safe schema definitions without relying on manual work or LLMs, providing a reliable gauge of your dataset's characteristics including statistics, nullability, uniqueness, and patterns.
 
+## Rationale
+
+I have found that when working with LLM's they often fail when working with python code generation for generic dataframes. Especially with feature engineering tasks. With providing an exhaustive schema definition of the dataframe, it helps to ground the LLM and prevents trial and error mistakes when performing analytical tasks.
+
 ## Features
 
 - **Automatic Schema Generation**: Convert any pandas DataFrame into a Pandera DataFrameModel
