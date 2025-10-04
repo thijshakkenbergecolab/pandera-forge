@@ -91,5 +91,7 @@ if __name__ == "__main__":
 
     # Run edge case test
     edge_model = test_edge_cases()
-
+    if edge_model:
+        print("Edge Model Code:")
+        print(edge_model)
     print("\n✅ All tests completed!")

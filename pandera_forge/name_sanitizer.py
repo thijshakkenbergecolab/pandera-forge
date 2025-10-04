@@ -50,11 +50,8 @@ class NameSanitizer:
     @classmethod
     def sanitize_class_name(cls, name: str) -> str:
         """Sanitize a class name to be a valid Python identifier"""
-        # Remove invalid characters - replace with underscore
-        sanitized = sub(r"\W+", "_", name)
-
-        # Don't remove trailing underscores - keep them for consistency
-        # This ensures "My-Model!@#" becomes "My_Model___" not "My_Model"
+        # Replace each non-word character with underscore
+        sanitized = sub(r"\W", "_", name)
 
         # Prefix with 'Model' if starts with digit
         if sanitized and sanitized[0].isdigit():

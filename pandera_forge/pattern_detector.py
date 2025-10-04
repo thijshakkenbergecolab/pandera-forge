@@ -25,9 +25,9 @@ class PatternDetector:
         "hex_color": r"^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$",
         "mac_address": r"^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$",
         "json": r"^\{.*\}$|^\[.*\]$",
-        "postal_code_us": r"^\d{5}(-\d{4})?$",
         # More specific patterns before less specific
         "numeric_string": r"^\d+$",
+        "postal_code_us": r"^\d{5}(-\d{4})?$",
         "alphanumeric": r"^[a-zA-Z0-9]+$",
         "alpha_only": r"^[a-zA-Z]+$",
         "slug": r"^[a-z0-9]+(?:-[a-z0-9]+)*$",
