@@ -1,6 +1,6 @@
-# Pandere Forge 🔨
+# Pandera Forge 🔨
 
-**Pandere Forge** is a deterministic generator for [Pandera](https://pandera.readthedocs.io/) DataFrameModels from pandas DataFrames. It automatically creates exhaustive, type-safe schema definitions without relying on manual work or LLMs, providing a reliable gauge of your dataset's characteristics including statistics, nullability, uniqueness, and patterns.
+**Pandera Forge** is a deterministic generator for [Pandera](https://pandera.readthedocs.io/) DataFrameModels from pandas DataFrames. It automatically creates exhaustive, type-safe schema definitions without relying on manual work or LLMs, providing a reliable gauge of your dataset's characteristics including statistics, nullability, uniqueness, and patterns.
 
 ## Features
 
@@ -15,19 +15,19 @@
 ## Installation
 
 ```bash
-pip install pandere-forge
+pip install pandera-forge
 ```
 
 For LLM enrichment features:
 ```bash
-pip install pandere-forge[llm]
+pip install pandera-forge[llm]
 ```
 
 ## Quick Start
 
 ```python
 import pandas as pd
-from pandere_forge import ModelGenerator
+from pandera_forge import ModelGenerator
 
 # Create a sample DataFrame
 df = pd.DataFrame({
@@ -67,7 +67,7 @@ class CustomerModel(DataFrameModel):
 
 ### Pattern Detection
 
-Pandere Forge automatically detects common patterns in string columns:
+Pandera Forge automatically detects common patterns in string columns:
 
 ```python
 df = pd.DataFrame({
@@ -106,7 +106,7 @@ generator = ModelGenerator(llm_api_key="your-openai-api-key")
 model_code = generator.generate(df, model_name="EnrichedModel")
 
 # Using Anthropic
-from pandere_forge.llm_enricher import LLMEnricher
+from pandera_forge.llm_enricher import LLMEnricher
 enricher = LLMEnricher(provider="anthropic", api_key="your-anthropic-api-key")
 generator = ModelGenerator(llm_enricher=enricher)
 model_code = generator.generate(df, model_name="EnrichedModel")

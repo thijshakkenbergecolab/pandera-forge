@@ -2,7 +2,7 @@
 
 import pytest
 import pandas as pd
-from pandere_forge import PatternDetector
+from pandera_forge import PatternDetector
 
 
 class TestPatternDetector:

@@ -4,7 +4,7 @@ import pytest
 import pandas as pd
 import numpy as np
 from datetime import datetime
-from pandere_forge import ModelGenerator
+from pandera_forge import ModelGenerator
 
 
 class TestModelGenerator:

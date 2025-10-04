@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Pandere Forge is a deterministic generator for Pandera DataFrameModels from pandas DataFrames. It automatically creates exhaustive, type-safe schema definitions with statistics, nullability, uniqueness, and pattern detection. The package supports optional LLM enrichment via OpenAI, Anthropic, or local models through Ollama.
+Pandera Forge is a deterministic generator for Pandera DataFrameModels from pandas DataFrames. It automatically creates exhaustive, type-safe schema definitions with statistics, nullability, uniqueness, and pattern detection. The package supports optional LLM enrichment via OpenAI, Anthropic, or local models through Ollama.
 
 ## Key Commands
 
@@ -23,7 +23,7 @@ pip install -e ".[dev]"
 pytest
 
 # Run tests with coverage
-pytest --cov=pandere_forge --cov-report=term-missing
+pytest --cov=pandera_forge --cov-report=term-missing
 
 # Run specific test file
 pytest tests/test_generator.py
@@ -32,16 +32,16 @@ pytest tests/test_generator.py
 pytest tests/test_generator.py::TestModelGenerator::test_basic_generation
 
 # Format code
-black pandere_forge tests
+black pandera_forge tests
 
 # Sort imports
-isort pandere_forge tests
+isort pandera_forge tests
 
 # Type checking
-mypy pandere_forge
+mypy pandera_forge
 
 # Linting
-flake8 pandere_forge tests
+flake8 pandera_forge tests
 ```
 
 ## Architecture

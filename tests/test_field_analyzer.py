@@ -3,7 +3,7 @@
 import pytest
 import pandas as pd
 import numpy as np
-from pandere_forge.field_analyzer import FieldAnalyzer
+from pandera_forge.field_analyzer import FieldAnalyzer
 
 
 class TestFieldAnalyzer:

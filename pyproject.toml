@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pandere-forge"
+name = "pandera-forge"
 version = "0.1.0"
 description = "Automatic Pandera DataFrameModel generator from pandas DataFrames"
 readme = "README.md"
@@ -49,14 +49,14 @@ llm = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/thijshakkenberg/pandere-forge"
-Documentation = "https://github.com/thijshakkenberg/pandere-forge#readme"
-Repository = "https://github.com/thijshakkenberg/pandere-forge.git"
-Issues = "https://github.com/thijshakkenberg/pandere-forge/issues"
+Homepage = "https://github.com/thijshakkenbergecolab/pandera-forge"
+Documentation = "https://github.com/thijshakkenbergecolab/pandera-forge#readme"
+Repository = "https://github.com/thijshakkenbergecolab/pandera-forge.git"
+Issues = "https://github.com/thijshakkenbergecolab/pandera-forge/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["pandere_forge*"]
+include = ["pandera_forge*"]
 
 [tool.black]
 line-length = 100
@@ -77,4 +77,4 @@ ignore_missing_imports = true
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
-addopts = "-v --cov=pandere_forge --cov-report=term-missing"
+addopts = "-v --cov=pandera_forge --cov-report=term-missing"

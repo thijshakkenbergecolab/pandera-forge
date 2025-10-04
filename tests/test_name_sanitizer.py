@@ -1,7 +1,7 @@
 """Tests for the NameSanitizer class"""
 
 import pytest
-from pandere_forge.name_sanitizer import NameSanitizer
+from pandera_forge.name_sanitizer import NameSanitizer
 
 
 class TestNameSanitizer:
