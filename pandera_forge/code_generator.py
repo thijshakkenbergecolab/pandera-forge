@@ -86,7 +86,7 @@ class CodeGenerator:
     @staticmethod
     def generate_imports() -> str:
         """Generate import statements for the model"""
-        return """from pandera.pandas import TimeStamp, DataFrameModel, Field
+        return """from pandera.pandas import Timestamp, DataFrameModel, Field
 from pandera.typing.pandas import Series, Int64, Int32, Int16, Int8, Float64, Float32, Float16, String, Bool, DateTime, Category, Object
 from typing import Optional"""
 

@@ -62,7 +62,7 @@ from typing import Optional
             # Add necessary imports
             exec(
                 """
-from pandera.pandas import TimeStamp, DataFrameModel, Field
+from pandera.pandas import Timestamp, DataFrameModel, Field
 from pandera.typing.pandas import Series, Int64, Int32, Int16, Int8, Float64, Float32, Float16, String, Bool, DateTime, Category, Object
 from typing import Optional
             """,

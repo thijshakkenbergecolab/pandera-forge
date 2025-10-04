@@ -6,13 +6,13 @@ from pathlib import Path
 from typing import Optional
 from pandas import DataFrame
 
-from pattern_detector import PatternDetector
-from code_generator import CodeGenerator
-from field_analyzer import FieldAnalyzer
-from name_sanitizer import NameSanitizer
-from type_mapper import TypeMapper
-from llm_enricher import LLMEnricher
-from validator import ModelValidator
+from .pattern_detector import PatternDetector
+from .code_generator import CodeGenerator
+from .field_analyzer import FieldAnalyzer
+from .name_sanitizer import NameSanitizer
+from .type_mapper import TypeMapper
+from .llm_enricher import LLMEnricher
+from .validator import ModelValidator
 
 
 class ModelGenerator:
