@@ -4,6 +4,8 @@ Code generation utilities for creating Pandera model strings
 
 from typing import Any, Dict, Optional, Union
 
+from pandas import notna, isna
+
 
 class CodeGenerator:
     """Generates Python code strings for Pandera models"""
@@ -34,11 +36,9 @@ class CodeGenerator:
 
         # Add numeric constraints if present
         if properties.get("min_value") is not None and properties.get("max_value") is not None:
-            import pandas as pd
-
             min_val = properties["min_value"]
             max_val = properties["max_value"]
-            if pd.notna(min_val) and pd.notna(max_val):
+            if notna(min_val) and notna(max_val):
                 field_params.append(f"ge={min_val}")
                 field_params.append(f"le={max_val}")
 
@@ -48,6 +48,27 @@ class CodeGenerator:
 
         if properties.get("is_nullable"):
             field_params.append("nullable=True")
+
+        # Add examples as isin parameter if present
+        examples = properties.get("examples", [])
+        if examples:
+            # Format examples based on their type
+            formatted_examples = []
+            for ex in examples:
+                if ex is None or (isinstance(ex, float) and isna(ex)):
+                    # Skip None/NaN values in isin list
+                    continue
+                elif isinstance(ex, str):
+                    formatted_examples.append(f'"{ex}"')
+                elif isinstance(ex, (int, float, bool)):
+                    # Keep numeric and boolean values unquoted
+                    formatted_examples.append(str(ex))
+                else:
+                    # For other types, convert to string and quote
+                    formatted_examples.append(f"{str(ex)}")
+
+            if formatted_examples:
+                field_params.append(f"isin=[{', '.join(formatted_examples)}]")
 
         # Build field string
         params_str = ", ".join(field_params) if field_params else ""

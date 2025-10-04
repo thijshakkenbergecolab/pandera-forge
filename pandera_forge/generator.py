@@ -145,12 +145,9 @@ class ModelGenerator:
             needs_alias=not is_valid_name,
         )
 
-        # Add examples comment if requested
-        if include_examples and properties.get("examples"):
-            comment = self.code_generator.generate_comment(properties)
-            if properties.get("pattern_name"):
-                comment = comment.rstrip() + f", pattern: {properties['pattern_name']}"
-            field_str += comment
+        # Add pattern comment if detected
+        if properties.get("pattern_name"):
+            field_str += f"  # pattern: {properties['pattern_name']}"
 
         return field_str
 

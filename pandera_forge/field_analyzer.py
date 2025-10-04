@@ -61,19 +61,18 @@ class FieldAnalyzer:
         return properties
 
     @staticmethod
-    def _get_examples(column: Series, num_samples: int = 5) -> List[str]:
-        """Get the most common values as examples"""
+    def _get_examples(column: Series, num_samples: int = 5) -> List[Any]:
+        """Get the most common values as examples, preserving their original types"""
         try:
-            # Convert to string for consistent handling
-            str_column = column.astype(str)
-            value_counts = str_column.value_counts()
+            # Get value counts without converting to string to preserve types
+            value_counts = column.value_counts()
             top_values = value_counts.nlargest(num_samples)
             return top_values.index.tolist()
         except (TypeError, ValueError):
-            # If conversion fails, try to get a few non-null samples
+            # If value_counts fails (e.g., unhashable types), try to get a few non-null samples
             try:
                 samples = column.dropna().head(num_samples)
-                return [str(s) for s in samples]
+                return samples.tolist()
             except:
                 return []
 
