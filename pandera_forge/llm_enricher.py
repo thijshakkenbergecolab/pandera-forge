@@ -2,10 +2,9 @@
 LLM-based enrichment for enhanced pattern detection and documentation
 """
 
+from json import dumps, loads
+from os import getenv
 from typing import Dict, List, Optional, Any, Literal
-import pandas as pd
-import json
-import os
 
 
 class LLMEnricher:
@@ -19,7 +18,7 @@ class LLMEnricher:
         provider: Literal["openai", "anthropic", "ollama"] = "openai",
         api_key: Optional[str] = None,
         model: Optional[str] = None,
-        ollama_base_url: str = "http://localhost:11434"
+        ollama_base_url: str = "http://localhost:11434",
     ):
         """
         Initialize LLM enricher.
@@ -31,7 +30,7 @@ class LLMEnricher:
             ollama_base_url: Base URL for Ollama API (default: http://localhost:11434)
         """
         self.provider = provider
-        self.api_key = api_key or os.getenv(f"{provider.upper()}_API_KEY")
+        self.api_key = api_key or getenv(f"{provider.upper()}_API_KEY")
         self.ollama_base_url = ollama_base_url
 
         # Set default models
@@ -50,24 +49,28 @@ class LLMEnricher:
 
         try:
             if provider == "openai" and self.api_key:
-                import openai
-                self.client = openai.OpenAI(api_key=self.api_key)
+                from openai import OpenAI
+
+                self.client = OpenAI(api_key=self.api_key)
                 self.enabled = True
             elif provider == "anthropic" and self.api_key:
-                import anthropic
-                self.client = anthropic.Anthropic(api_key=self.api_key)
+                from anthropic import Anthropic
+
+                self.client = Anthropic(api_key=self.api_key)
                 self.enabled = True
             elif provider == "ollama":
                 try:
-                    import ollama
-                    self.client = ollama.Client(host=self.ollama_base_url)
+                    from ollama import Client
+
+                    self.client = Client(host=self.ollama_base_url)
                     # Test connection
                     self.client.list()
                     self.enabled = True
                 except Exception:
                     # Fallback to requests-based implementation
-                    import requests
-                    response = requests.get(f"{self.ollama_base_url}/api/tags")
+                    from httpx import get
+
+                    response = get(f"{self.ollama_base_url}/api/tags")
                     if response.status_code == 200:
                         self.enabled = True
         except ImportError:
@@ -76,11 +79,7 @@ class LLMEnricher:
             pass
 
     def analyze_column(
-        self,
-        column_name: str,
-        sample_values: List[str],
-        dtype: str,
-        properties: Dict[str, Any]
+        self, column_name: str, sample_values: List[str], dtype: str, properties: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
         Use LLM to analyze column and suggest improvements.
@@ -113,15 +112,11 @@ class LLMEnricher:
                 "description": f"Column '{column_name}' of type {dtype}",
                 "semantic_type": self._infer_semantic_type(column_name),
                 "suggested_validations": [],
-                "business_rules": []
+                "business_rules": [],
             }
 
     def _create_analysis_prompt(
-        self,
-        column_name: str,
-        sample_values: List[str],
-        dtype: str,
-        properties: Dict[str, Any]
+        self, column_name: str, sample_values: List[str], dtype: str, properties: Dict[str, Any]
     ) -> str:
         """Create prompt for LLM analysis."""
         prompt = f"""Analyze this data column and provide insights:
@@ -129,7 +124,7 @@ class LLMEnricher:
 Column Name: {column_name}
 Data Type: {dtype}
 Sample Values: {', '.join(str(v) for v in sample_values[:10])}
-Properties: {json.dumps(properties, indent=2)}
+Properties: {dumps(properties, indent=2)}
 
 Please provide a JSON response with:
 1. "description": A clear, concise description of what this column represents
@@ -146,11 +141,14 @@ Respond with valid JSON only."""
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": "You are a data analyst expert. Provide JSON responses only."},
-                    {"role": "user", "content": prompt}
+                    {
+                        "role": "system",
+                        "content": "You are a data analyst expert. Provide JSON responses only.",
+                    },
+                    {"role": "user", "content": prompt},
                 ],
                 temperature=0.1,
-                max_tokens=500
+                max_tokens=500,
             )
             return response.choices[0].message.content
 
@@ -160,38 +158,45 @@ Respond with valid JSON only."""
                 messages=[{"role": "user", "content": prompt}],
                 system="You are a data analyst expert. Provide JSON responses only.",
                 temperature=0.1,
-                max_tokens=500
+                max_tokens=500,
             )
             return response.content[0].text
 
         elif self.provider == "ollama":
-            if hasattr(self.client, 'chat'):
+            if hasattr(self.client, "chat"):
                 # Using ollama Python package
                 response = self.client.chat(
                     model=self.model,
                     messages=[
-                        {"role": "system", "content": "You are a data analyst expert. Provide JSON responses only."},
-                        {"role": "user", "content": prompt}
+                        {
+                            "role": "system",
+                            "content": "You are a data analyst expert. Provide JSON responses only.",
+                        },
+                        {"role": "user", "content": prompt},
                     ],
-                    options={"temperature": 0.1}
+                    options={"temperature": 0.1},
                 )
-                return response['message']['content']
+                return response["message"]["content"]
             else:
                 # Using requests fallback
-                import requests
-                response = requests.post(
+                from httpx import post
+
+                response = post(
                     f"{self.ollama_base_url}/api/chat",
                     json={
                         "model": self.model,
                         "messages": [
-                            {"role": "system", "content": "You are a data analyst expert. Provide JSON responses only."},
-                            {"role": "user", "content": prompt}
+                            {
+                                "role": "system",
+                                "content": "You are a data analyst expert. Provide JSON responses only.",
+                            },
+                            {"role": "user", "content": prompt},
                         ],
                         "stream": False,
-                        "options": {"temperature": 0.1}
-                    }
+                        "options": {"temperature": 0.1},
+                    },
                 )
-                return response.json()['message']['content']
+                return response.json()["message"]["content"]
 
         return "{}"
 
@@ -200,10 +205,11 @@ Respond with valid JSON only."""
         try:
             # Try to extract JSON from response
             import re
-            json_match = re.search(r'\{.*\}', response, re.DOTALL)
+
+            json_match = re.search(r"\{.*\}", response, re.DOTALL)
             if json_match:
-                return json.loads(json_match.group())
-            return json.loads(response)
+                return loads(json_match.group())
+            return loads(response)
         except Exception:
             # Return empty dict if parsing fails
             return {}
@@ -243,11 +249,7 @@ Respond with valid JSON only."""
         else:
             return "unknown"
 
-    def generate_documentation(
-        self,
-        model_name: str,
-        columns: List[Dict[str, Any]]
-    ) -> str:
+    def generate_documentation(self, model_name: str, columns: List[Dict[str, Any]]) -> str:
         """
         Generate documentation for the model.
 
@@ -267,17 +269,17 @@ Respond with valid JSON only."""
             doc += f"### {col['name']}\n\n"
             doc += f"- **Type**: {col.get('type', 'Unknown')}\n"
 
-            if col.get('nullable'):
+            if col.get("nullable"):
                 doc += "- **Nullable**: Yes\n"
-            if col.get('unique'):
+            if col.get("unique"):
                 doc += "- **Unique**: Yes\n"
-            if col.get('pattern_name'):
+            if col.get("pattern_name"):
                 doc += f"- **Pattern**: {col['pattern_name']}\n"
-            if col.get('min_value') is not None:
+            if col.get("min_value") is not None:
                 doc += f"- **Min Value**: {col['min_value']}\n"
-            if col.get('max_value') is not None:
+            if col.get("max_value") is not None:
                 doc += f"- **Max Value**: {col['max_value']}\n"
-            if col.get('examples'):
+            if col.get("examples"):
                 doc += f"- **Examples**: {', '.join(str(e) for e in col['examples'][:3])}\n"
 
             doc += "\n"

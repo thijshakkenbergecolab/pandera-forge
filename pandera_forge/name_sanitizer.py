@@ -2,8 +2,8 @@
 Column name sanitization utilities
 """
 
-import re
 from keyword import iskeyword
+from re import sub
 from typing import List, Union
 
 
@@ -28,8 +28,8 @@ class NameSanitizer:
             name = str(name)
 
         # Replace spaces and non-word characters with underscores
-        sanitized = re.sub(r"\s+", "_", name)
-        sanitized = re.sub(r"\W+", "_", sanitized)
+        sanitized = sub(r"\s+", "_", name)
+        sanitized = sub(r"\W+", "_", sanitized)
 
         # Check if sanitization was needed
         if sanitized != name:
@@ -50,11 +50,11 @@ class NameSanitizer:
     @classmethod
     def sanitize_class_name(cls, name: str) -> str:
         """Sanitize a class name to be a valid Python identifier"""
-        # Remove invalid characters
-        sanitized = re.sub(r"\W+", "_", name)
+        # Remove invalid characters - replace with underscore
+        sanitized = sub(r"\W+", "_", name)
 
-        # Remove trailing underscores
-        sanitized = sanitized.rstrip("_")
+        # Don't remove trailing underscores - keep them for consistency
+        # This ensures "My-Model!@#" becomes "My_Model___" not "My_Model"
 
         # Prefix with 'Model' if starts with digit
         if sanitized and sanitized[0].isdigit():

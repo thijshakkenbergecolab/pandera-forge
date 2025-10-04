@@ -1,11 +1,9 @@
 """
 Model validation utilities
 """
-
+from traceback import format_exc
 from typing import Any, Dict, Optional
 from pandas import DataFrame
-import traceback
-
 
 class ModelValidator:
     """Validates generated Pandera models"""
@@ -45,7 +43,7 @@ import numpy as np
         except SyntaxError as e:
             return False, f"Syntax error: {e}"
         except Exception as e:
-            return False, f"Execution error: {e}\n{traceback.format_exc()}"
+            return False, f"Execution error: {e}\n{format_exc()}"
 
     @staticmethod
     def validate_against_dataframe(
@@ -92,4 +90,4 @@ import numpy as np
             return True, None
 
         except Exception as e:
-            return False, f"Validation error: {e}\n{traceback.format_exc()}"
+            return False, f"Validation error: {e}\n{format_exc()}"

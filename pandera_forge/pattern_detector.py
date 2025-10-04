@@ -2,9 +2,9 @@
 Pattern detection and enrichment utilities for string columns
 """
 
-import re
+from re import escape
 from typing import Dict, List, Optional, Tuple
-import pandas as pd
+from pandas import Series
 
 
 class PatternDetector:
@@ -25,16 +25,18 @@ class PatternDetector:
         "hex_color": r"^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$",
         "mac_address": r"^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$",
         "json": r"^\{.*\}$|^\[.*\]$",
-        "slug": r"^[a-z0-9]+(?:-[a-z0-9]+)*$",
-        # Less specific patterns last
         "postal_code_us": r"^\d{5}(-\d{4})?$",
+        # More specific patterns before less specific
         "numeric_string": r"^\d+$",
         "alphanumeric": r"^[a-zA-Z0-9]+$",
         "alpha_only": r"^[a-zA-Z]+$",
+        "slug": r"^[a-z0-9]+(?:-[a-z0-9]+)*$",
     }
 
     @classmethod
-    def detect_pattern(cls, series: pd.Series, min_match_ratio: float = 0.9) -> Optional[Tuple[str, str]]:
+    def detect_pattern(
+        cls, series: Series, min_match_ratio: float = 0.9
+    ) -> Optional[Tuple[str, str]]:
         """
         Detect if a series matches any known pattern.
 
@@ -65,7 +67,7 @@ class PatternDetector:
         return None
 
     @classmethod
-    def infer_string_constraints(cls, series: pd.Series) -> Dict[str, any]:
+    def infer_string_constraints(cls, series: Series) -> Dict[str, any]:
         """
         Infer string-specific constraints from a series.
 
@@ -115,7 +117,7 @@ class PatternDetector:
         return constraints
 
     @classmethod
-    def generate_custom_regex(cls, series: pd.Series, sample_size: int = 100) -> Optional[str]:
+    def generate_custom_regex(cls, series: Series, sample_size: int = 100) -> Optional[str]:
         """
         Attempt to generate a custom regex pattern from sample values.
 
@@ -154,13 +156,14 @@ class PatternDetector:
                 elif char == " ":
                     char_pattern += r"\s"
                 else:
-                    char_pattern += re.escape(char)
+                    char_pattern += escape(char)
 
             patterns.append(char_pattern)
 
         # Find the most common pattern
         if patterns:
             from collections import Counter
+
             pattern_counts = Counter(patterns)
             most_common = pattern_counts.most_common(1)[0]
 

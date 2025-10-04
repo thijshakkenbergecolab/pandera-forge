@@ -3,8 +3,8 @@ Field analysis utilities for extracting column properties
 """
 
 from typing import Any, Dict, List, Optional, Tuple
-import pandas as pd
-from pandas import DataFrame
+from pandas import DataFrame, Series, notna
+from pandas.core.dtypes.common import is_numeric_dtype
 
 
 class FieldAnalyzer:
@@ -29,17 +29,21 @@ class FieldAnalyzer:
 
         # Check uniqueness
         try:
-            properties["is_unique"] = column.nunique() == len(df)
-            properties["distinct_count"] = column.nunique()
+            # For uniqueness check, we need to consider nulls
+            # If there are nulls and non-null values are unique, still not fully unique
+            non_null_count = column.count()
+            # Convert to bool to avoid numpy.bool_ type
+            properties["is_unique"] = bool(column.nunique() == len(df) and non_null_count == len(df))
+            properties["distinct_count"] = int(column.nunique())
         except TypeError:  # handles unhashable types
             properties["is_unique"] = False
             properties["distinct_count"] = None
 
         # Check nullability
-        properties["is_nullable"] = column.isnull().any()
+        properties["is_nullable"] = bool(column.isnull().any())
 
         # Get min/max for numeric types
-        if pd.api.types.is_numeric_dtype(column):
+        if is_numeric_dtype(column):
             min_val = column.min()
             max_val = column.max()
             # Only set if not NaN
@@ -55,7 +59,7 @@ class FieldAnalyzer:
         return properties
 
     @staticmethod
-    def _get_examples(column: pd.Series, num_samples: int = 5) -> List[str]:
+    def _get_examples(column: Series, num_samples: int = 5) -> List[str]:
         """Get the most common values as examples"""
         try:
             # Convert to string for consistent handling
@@ -87,7 +91,7 @@ class FieldAnalyzer:
             # Check if values are finite
             min_val = properties["min_value"]
             max_val = properties["max_value"]
-            if pd.notna(min_val) and pd.notna(max_val):
+            if notna(min_val) and notna(max_val):
                 field_params.insert(0, f"ge={min_val}")
                 field_params.insert(1, f"le={max_val}")
 
