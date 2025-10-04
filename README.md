@@ -26,16 +26,16 @@ pip install pandera-forge[llm]
 ## Quick Start
 
 ```python
-import pandas as pd
+from pandas import DataFrame, to_datetime
 from pandera_forge import ModelGenerator
 
 # Create a sample DataFrame
-df = pd.DataFrame({
+df = DataFrame({
     "customer_id": [1, 2, 3, 4],
     "email": ["alice@example.com", "bob@example.com", "charlie@example.com", "david@example.com"],
     "age": [25, 30, 35, 40],
     "is_active": [True, True, False, True],
-    "signup_date": pd.to_datetime(["2023-01-01", "2023-01-02", "2023-01-03", "2023-01-04"])
+    "signup_date": to_datetime(["2023-01-01", "2023-01-02", "2023-01-03", "2023-01-04"])
 })
 
 # Generate the model
@@ -48,10 +48,8 @@ print(model_code)
 This generates:
 
 ```python
-from pandera import DataFrameModel, Field
-from pandera.typing import Series, Int64, Int32, Int16, Int8
-from pandera.typing import Float64, Float32, Float16
-from pandera.typing import String, Bool, DateTime, Category, Object
+from pandera.pandas import DataFrameModel, Field, Timestamp
+from pandera.typing.pandas import Series, Int64, Int32, Int16, Int8, Float64, Float32, Float16, String, Bool, DateTime, Category, Object
 from typing import Optional
 
 
@@ -70,7 +68,10 @@ class CustomerModel(DataFrameModel):
 Pandera Forge automatically detects common patterns in string columns:
 
 ```python
-df = pd.DataFrame({
+from pandas import DataFrame
+from pandera_forge import ModelGenerator
+
+df = DataFrame({
     "email": ["user@example.com", "admin@test.org"],
     "phone": ["+1234567890", "+0987654321"],
     "url": ["https://example.com", "https://test.org"]
@@ -85,7 +86,10 @@ model_code = generator.generate(df, detect_patterns=True)
 The generator handles problematic column names and mixed data types:
 
 ```python
-df = pd.DataFrame({
+from pandas import DataFrame
+from pandera_forge import ModelGenerator
+
+df = DataFrame({
     "Column With Spaces": [1, 2, 3],
     "123_numeric_start": ["a", "b", "c"],
     "class": [True, False, True],  # Reserved keyword
@@ -101,6 +105,10 @@ model_code = generator.generate(df)  # Automatically sanitizes column names
 For enhanced pattern detection and documentation using OpenAI, Anthropic, or local LLMs via Ollama:
 
 ```python
+from pandas import DataFrame
+from pandera_forge import ModelGenerator
+df: DataFrame = ... # your DataFrame here
+
 # Using OpenAI (default)
 generator = ModelGenerator(llm_api_key="your-openai-api-key")
 model_code = generator.generate(df, model_name="EnrichedModel")
@@ -171,7 +179,12 @@ Generates a Pandera DataFrameModel from a pandas DataFrame.
 Detects patterns in string columns.
 
 ```python
-PatternDetector.detect_pattern(series: pd.Series, min_match_ratio: float = 0.9)
+from pandas import Series
+
+PatternDetector.detect_pattern(
+    series: Series, 
+    min_match_ratio: float = 0.9
+)
 ```
 
 Supported patterns:
