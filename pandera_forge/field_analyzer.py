@@ -33,7 +33,9 @@ class FieldAnalyzer:
             # If there are nulls and non-null values are unique, still not fully unique
             non_null_count = column.count()
             # Convert to bool to avoid numpy.bool_ type
-            properties["is_unique"] = bool(column.nunique() == len(df) and non_null_count == len(df))
+            properties["is_unique"] = bool(
+                column.nunique() == len(df) and non_null_count == len(df)
+            )
             properties["distinct_count"] = int(column.nunique())
         except TypeError:  # handles unhashable types
             properties["is_unique"] = False
@@ -47,8 +49,8 @@ class FieldAnalyzer:
             min_val = column.min()
             max_val = column.max()
             # Only set if not NaN
-            properties["min_value"] = min_val if pd.notna(min_val) else None
-            properties["max_value"] = max_val if pd.notna(max_val) else None
+            properties["min_value"] = min_val if notna(min_val) else None
+            properties["max_value"] = max_val if notna(max_val) else None
         else:
             properties["min_value"] = None
             properties["max_value"] = None

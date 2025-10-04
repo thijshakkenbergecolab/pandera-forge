@@ -1,9 +1,11 @@
 """
 Model validation utilities
 """
+
 from traceback import format_exc
 from typing import Any, Dict, Optional
 from pandas import DataFrame
+
 
 class ModelValidator:
     """Validates generated Pandera models"""
@@ -19,17 +21,15 @@ class ModelValidator:
         try:
             # Create a namespace for execution
             namespace: Dict[str, Any] = {}
-
             # Add necessary imports to namespace
-            exec("""
-from pandera import DataFrameModel, Field
-from pandera.typing import Series, Int64, Int32, Int16, Int8
-from pandera.typing import Float64, Float32, Float16
-from pandera.typing import String, Bool, DateTime, Category, Object
+            exec(
+                """
+from pandera.pandas import Timestamp, DataFrameModel, Field
+from pandera.typing import Series, Int64, Int32, Int16, Int8, Float64, Float32, Float16, String, Bool, DateTime, Category, Object
 from typing import Optional
-import pandas as pd
-import numpy as np
-            """, namespace)
+            """,
+                namespace,
+            )
 
             # Execute the model code
             exec(model_code, namespace)
@@ -47,9 +47,7 @@ import numpy as np
 
     @staticmethod
     def validate_against_dataframe(
-        model_code: str,
-        class_name: str,
-        df: DataFrame
+        model_code: str, class_name: str, df: DataFrame
     ) -> tuple[bool, Optional[str]]:
         """
         Validate that the model can successfully validate the source DataFrame.
@@ -62,15 +60,14 @@ import numpy as np
             namespace: Dict[str, Any] = {}
 
             # Add necessary imports
-            exec("""
-from pandera import DataFrameModel, Field
-from pandera.typing import Series, Int64, Int32, Int16, Int8
-from pandera.typing import Float64, Float32, Float16
-from pandera.typing import String, Bool, DateTime, Category, Object
+            exec(
+                """
+from pandera.pandas import TimeStamp, DataFrameModel, Field
+from pandera.typing.pandas import Series, Int64, Int32, Int16, Int8, Float64, Float32, Float16, String, Bool, DateTime, Category, Object
 from typing import Optional
-import pandas as pd
-import numpy as np
-            """, namespace)
+            """,
+                namespace,
+            )
 
             # Execute the model code
             exec(model_code, namespace)

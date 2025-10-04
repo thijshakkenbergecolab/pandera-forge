@@ -6,19 +6,21 @@ from pathlib import Path
 from typing import Optional
 from pandas import DataFrame
 
-from .type_mapper import TypeMapper
-from .name_sanitizer import NameSanitizer
-from .field_analyzer import FieldAnalyzer
-from .code_generator import CodeGenerator
-from .validator import ModelValidator
-from .pattern_detector import PatternDetector
-from .llm_enricher import LLMEnricher
+from pattern_detector import PatternDetector
+from code_generator import CodeGenerator
+from field_analyzer import FieldAnalyzer
+from name_sanitizer import NameSanitizer
+from type_mapper import TypeMapper
+from llm_enricher import LLMEnricher
+from validator import ModelValidator
 
 
 class ModelGenerator:
     """Main class for generating Pandera models from DataFrames"""
 
-    def __init__(self, llm_api_key: Optional[str] = None, llm_enricher: Optional[LLMEnricher] = None):
+    def __init__(
+        self, llm_api_key: Optional[str] = None, llm_enricher: Optional[LLMEnricher] = None
+    ):
         self.type_mapper = TypeMapper()
         self.name_sanitizer = NameSanitizer()
         self.field_analyzer = FieldAnalyzer()
@@ -38,7 +40,7 @@ class ModelGenerator:
         validate: bool = True,
         include_examples: bool = True,
         detect_patterns: bool = True,
-        source_file: Optional[Path] = None
+        source_file: Optional[Path] = None,
     ) -> Optional[str]:
         """
         Generate a Pandera DataFrameModel from a pandas DataFrame.
@@ -69,10 +71,7 @@ class ModelGenerator:
             return None
 
         # Generate the class definition
-        class_code = self.code_generator.generate_class_definition(
-            sanitized_model_name,
-            fields
-        )
+        class_code = self.code_generator.generate_class_definition(sanitized_model_name, fields)
 
         # Generate complete code with imports
         full_code = self.code_generator.generate_imports() + "\n\n\n" + class_code
@@ -86,9 +85,7 @@ class ModelGenerator:
 
             # Validate against DataFrame
             is_valid, error = self.validator.validate_against_dataframe(
-                class_code,
-                sanitized_model_name,
-                df
+                class_code, sanitized_model_name, df
             )
             if not is_valid:
                 print(f"Warning: Model validation against DataFrame failed: {error}")
@@ -97,8 +94,7 @@ class ModelGenerator:
         # Add implementation example if source file provided
         if source_file:
             implementation = self._generate_implementation_example(
-                sanitized_model_name,
-                source_file
+                sanitized_model_name, source_file
             )
             full_code += "\n\n" + implementation
 
@@ -109,7 +105,7 @@ class ModelGenerator:
         df: DataFrame,
         column: str,
         include_examples: bool = True,
-        detect_patterns: bool = True
+        detect_patterns: bool = True,
     ) -> Optional[str]:
         """Generate field definition for a single column"""
         # Get pandera type
@@ -146,7 +142,7 @@ class ModelGenerator:
             pandera_type=pandera_type.__name__,
             properties=properties,
             original_column_name=column,
-            needs_alias=not is_valid_name
+            needs_alias=not is_valid_name,
         )
 
         # Add examples comment if requested
@@ -158,13 +154,10 @@ class ModelGenerator:
 
         return field_str
 
-    def _generate_implementation_example(
-        self,
-        model_name: str,
-        source_file: Path
-    ) -> str:
+    def _generate_implementation_example(self, model_name: str, source_file: Path) -> str:
         """Generate example implementation code"""
-        return f"""
+        return f"""# Example implementation
+
 
 if __name__ == "__main__":
     from pathlib import Path
@@ -183,7 +176,7 @@ if __name__ == "__main__":
     elif file_path.suffix == ".json":
         df = pd.read_json(file_path)
     else:
-        raise ValueError(f"Unsupported file type: {file_path.suffix}")
+        raise ValueError(f"Unsupported file type: {source_file.suffix}")
 
     # Validate the DataFrame
     validated_df = {model_name}.validate(df)

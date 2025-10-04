@@ -14,7 +14,7 @@ class CodeGenerator:
         pandera_type: str,
         properties: Dict[str, Any],
         original_column_name: Union[str, int],
-        needs_alias: bool
+        needs_alias: bool,
     ) -> str:
         """
         Generate a Field definition string.
@@ -35,6 +35,7 @@ class CodeGenerator:
         # Add numeric constraints if present
         if properties.get("min_value") is not None and properties.get("max_value") is not None:
             import pandas as pd
+
             min_val = properties["min_value"]
             max_val = properties["max_value"]
             if pd.notna(min_val) and pd.notna(max_val):
@@ -71,20 +72,22 @@ class CodeGenerator:
         distinct_count = properties.get("distinct_count")
 
         if examples and distinct_count is not None:
-            examples_str = ", ".join([f'"{ex}"' if isinstance(ex, str) else str(ex) for ex in examples[:5]])
+            examples_str = ", ".join(
+                [f'"{ex}"' if isinstance(ex, str) else str(ex) for ex in examples[:5]]
+            )
             return f"  # {distinct_count} distinct values, examples: [{examples_str}]"
         elif examples:
-            examples_str = ", ".join([f'"{ex}"' if isinstance(ex, str) else str(ex) for ex in examples[:5]])
+            examples_str = ", ".join(
+                [f'"{ex}"' if isinstance(ex, str) else str(ex) for ex in examples[:5]]
+            )
             return f"  # examples: [{examples_str}]"
         return ""
 
     @staticmethod
     def generate_imports() -> str:
         """Generate import statements for the model"""
-        return """from pandera import DataFrameModel, Field
-from pandera.typing import Series, Int64, Int32, Int16, Int8
-from pandera.typing import Float64, Float32, Float16
-from pandera.typing import String, Bool, DateTime, Category, Object
+        return """from pandera.pandas import TimeStamp, DataFrameModel, Field
+from pandera.typing.pandas import Series, Int64, Int32, Int16, Int8, Float64, Float32, Float16, String, Bool, DateTime, Category, Object
 from typing import Optional"""
 
     @staticmethod

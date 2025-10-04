@@ -1,9 +1,6 @@
 """Tests for the ModelGenerator class"""
+from pandas import DataFrame, to_datetime, Categorical
 
-import pytest
-import pandas as pd
-import numpy as np
-from datetime import datetime
 from pandera_forge import ModelGenerator
 
 
@@ -12,12 +9,12 @@ class TestModelGenerator:
 
     def test_basic_generation(self):
         """Test basic model generation with common data types"""
-        df = pd.DataFrame({
+        df = DataFrame({
             "int_col": [1, 2, 3, 4],
             "float_col": [1.0, 2.0, 3.0, 4.0],
             "str_col": ["a", "b", "c", "d"],
             "bool_col": [True, False, True, False],
-            "date_col": pd.to_datetime(["2023-01-01", "2023-01-02", "2023-01-03", "2023-01-04"])
+            "date_col": to_datetime(["2023-01-01", "2023-01-02", "2023-01-03", "2023-01-04"])
         })
 
         generator = ModelGenerator()
@@ -33,7 +30,7 @@ class TestModelGenerator:
 
     def test_nullable_fields(self):
         """Test that nullable fields are properly detected"""
-        df = pd.DataFrame({
+        df = DataFrame({
             "nullable_col": [1, 2, None, 4],
             "non_nullable_col": [1, 2, 3, 4]
         })
@@ -47,7 +44,7 @@ class TestModelGenerator:
 
     def test_unique_fields(self):
         """Test that unique fields are properly detected"""
-        df = pd.DataFrame({
+        df = DataFrame({
             "unique_col": [1, 2, 3, 4],
             "non_unique_col": [1, 1, 2, 2]
         })
@@ -60,7 +57,7 @@ class TestModelGenerator:
 
     def test_numeric_constraints(self):
         """Test that min/max values are properly set for numeric columns"""
-        df = pd.DataFrame({
+        df = DataFrame({
             "numeric_col": [10, 20, 30, 40]
         })
 
@@ -72,7 +69,7 @@ class TestModelGenerator:
 
     def test_column_name_sanitization(self):
         """Test that problematic column names are sanitized"""
-        df = pd.DataFrame({
+        df = DataFrame({
             "Column With Spaces": [1, 2, 3],
             "123_starts_with_number": [4, 5, 6],
             "class": [7, 8, 9],  # Reserved keyword
@@ -90,8 +87,8 @@ class TestModelGenerator:
 
     def test_categorical_data(self):
         """Test categorical data type handling"""
-        df = pd.DataFrame({
-            "category_col": pd.Categorical(["a", "b", "c", "a", "b"])
+        df = DataFrame({
+            "category_col": Categorical(["a", "b", "c", "a", "b"])
         })
 
         generator = ModelGenerator()
@@ -101,7 +98,7 @@ class TestModelGenerator:
 
     def test_empty_dataframe(self):
         """Test handling of empty DataFrame"""
-        df = pd.DataFrame()
+        df = DataFrame()
 
         generator = ModelGenerator()
         model_code = generator.generate(df, "EmptyModel")
@@ -110,7 +107,7 @@ class TestModelGenerator:
 
     def test_numeric_column_names(self):
         """Test handling of numeric column names"""
-        df = pd.DataFrame({
+        df = DataFrame({
             0: [1, 2, 3],
             1: [4, 5, 6],
             2.5: [7, 8, 9]
@@ -126,7 +123,7 @@ class TestModelGenerator:
 
     def test_validation_enabled(self):
         """Test that validation works when enabled"""
-        df = pd.DataFrame({
+        df = DataFrame({
             "col1": [1, 2, 3],
             "col2": ["a", "b", "c"]
         })
@@ -139,7 +136,7 @@ class TestModelGenerator:
 
     def test_validation_disabled(self):
         """Test that validation can be disabled"""
-        df = pd.DataFrame({
+        df = DataFrame({
             "col1": [1, 2, 3]
         })
 
@@ -150,7 +147,7 @@ class TestModelGenerator:
 
     def test_examples_included(self):
         """Test that examples are included in comments when requested"""
-        df = pd.DataFrame({
+        df = DataFrame({
             "col1": ["example1", "example2", "example3"]
         })
 
@@ -162,7 +159,7 @@ class TestModelGenerator:
 
     def test_examples_excluded(self):
         """Test that examples are excluded when not requested"""
-        df = pd.DataFrame({
+        df = DataFrame({
             "col1": ["example1", "example2", "example3"]
         })
 
@@ -173,7 +170,7 @@ class TestModelGenerator:
 
     def test_mixed_types_object_column(self):
         """Test handling of mixed type columns (become Object type)"""
-        df = pd.DataFrame({
+        df = DataFrame({
             "mixed_col": [1, "two", 3.0, None]
         })
 
