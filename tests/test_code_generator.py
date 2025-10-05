@@ -35,7 +35,7 @@ class TestCodeGenerator:
 
     def test_generate_field_string_with_nan_in_examples(self):
         """Test field generation with NaN values in examples"""
-        properties = {"examples": [1.0, nan, 3.0], "is_nullable": True}
+        properties = {"examples": [1.0, nan, 3.0], "is_nullable": True, "distinct_count": 3}
 
         field_str = CodeGenerator.generate_field_string(
             field_name="test_field",
@@ -46,7 +46,7 @@ class TestCodeGenerator:
         )
 
         # NaN should be skipped in isin list
-        assert "isin=[1.0, 3.0]" in field_str
+        assert "isin=[1.0, 3.0]" in field_str  # noqa isin is the name of the parameter
         assert "nan" not in field_str.lower()
 
     def test_generate_field_string_with_alias_numeric(self):

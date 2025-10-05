@@ -89,9 +89,13 @@ class TestFieldAnalyzer:
 
         examples = FieldAnalyzer._get_examples(series, num_samples=3)
 
-        assert len(examples) == 3
+        # Since there are 5 unique values (<=10), all values are returned for isin constraint
+        assert len(examples) == 5
         assert "a" in examples  # Most common
         assert "b" in examples  # Second most common
+        assert "c" in examples
+        assert "d" in examples
+        assert "e" in examples
 
     def test_get_examples_with_nulls(self):
         """Test getting examples from series with null values"""
