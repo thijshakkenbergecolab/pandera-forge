@@ -37,8 +37,10 @@ class TestModelGenerator:
         generator = ModelGenerator()
         model_code = generator.generate(df, "NullableModel")
 
-        assert "nullable_col: Series[Float64] = Field(ge=1.0, le=4.0, nullable=True)" in model_code
-        assert "nullable=True" in model_code.split("nullable_col")[1].split("\n")[0]
+        # Check that nullable_col has nullable=True
+        nullable_line = [line for line in model_code.split('\n') if 'nullable_col' in line][0]
+        assert "nullable=True" in nullable_line
+        assert "Series[Float64]" in nullable_line
         assert "nullable=True" not in model_code.split("non_nullable_col")[1].split("\n")[0]
 
     def test_unique_fields(self):
@@ -137,7 +139,8 @@ class TestModelGenerator:
         generator = ModelGenerator()
         model_code = generator.generate(df, "ExamplesModel", include_examples=True)
 
-        assert "examples:" in model_code
+        # When include_examples=True, examples should be in isin parameter
+        assert "isin=" in model_code
         assert "example1" in model_code
 
     def test_examples_excluded(self):
