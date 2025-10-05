@@ -5,7 +5,6 @@ Pattern detection and enrichment utilities for string columns
 from logging import error
 from re import escape
 from typing import Any, Dict, Optional, Tuple
-
 from pandas import Series
 from pydantic import BaseModel
 

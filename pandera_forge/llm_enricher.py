@@ -8,7 +8,6 @@ from logging import debug, error, info
 from os import getenv
 from re import DOTALL, search
 from typing import Any, Dict, List, Literal, Optional, Union
-
 from anthropic import Anthropic
 from anthropic.types import MessageParam
 from ollama import Client

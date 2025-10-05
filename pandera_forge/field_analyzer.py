@@ -3,7 +3,6 @@ Field analysis utilities for extracting column properties
 """
 
 from typing import Any, Dict, List
-
 from pandas import DataFrame, Series, notna
 from pandas.core.dtypes.common import is_numeric_dtype
 

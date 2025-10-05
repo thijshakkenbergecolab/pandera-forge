@@ -2,8 +2,7 @@
 Code generation utilities for creating Pandera model strings
 """
 
-from typing import Any, Dict, Optional, Union
-
+from typing import Any, Dict, Union
 from pandas import isna, notna
 
 from .constants import PANDERA_IMPORTS

@@ -4,7 +4,6 @@ Main generator class that orchestrates the model generation process
 
 from pathlib import Path
 from typing import Optional
-
 from pandas import DataFrame
 
 from .code_generator import CodeGenerator
