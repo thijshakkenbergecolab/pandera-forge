@@ -2,66 +2,71 @@
 LLM-based enrichment for enhanced pattern detection and documentation
 """
 
+from dataclasses import dataclass, field
 from json import dumps, loads
-from os import error, getenv
-from typing import Any, Dict, List, Literal, Optional
+from logging import debug, error, info
+from os import getenv
+from re import DOTALL, search
+from typing import Any, Dict, List, Literal, Optional, Union
+
+from anthropic import Anthropic
+from anthropic.types import MessageParam
+from ollama import Client
+from openai import OpenAI
+from openai.types.chat import ChatCompletionSystemMessageParam, ChatCompletionUserMessageParam
 
 
+@dataclass
 class LLMEnricher:
     """
     Optional LLM-based enrichment for column analysis.
     Supports OpenAI, Anthropic, and Ollama for local LLMs.
+
+    Args:
+        provider: LLM provider to use ("openai", "anthropic", or "ollama")
+        api_key: Optional API key for LLM service (not needed for Ollama)
+        model: Optional model name override
+        ollama_base_url: Base URL for Ollama API (default: http://localhost:11434)
+    Returns:
+        An instance of LLMEnricher with methods to analyze columns and generate documentation.
     """
 
-    def __init__(
-        self,
-        provider: Literal["openai", "anthropic", "ollama"] = "openai",
-        api_key: Optional[str] = None,
-        model: Optional[str] = None,
-        ollama_base_url: str = "http://localhost:11434",
-    ):
-        """
-        Initialize LLM enricher.
+    provider: Literal["openai", "anthropic", "ollama"] = "openai"
+    api_key: Optional[str] = None
+    model: Optional[str] = None
+    ollama_base_url: str = "http://localhost:11434"
+    client: Optional[Union[OpenAI, Anthropic, Client]] = field(init=False)
+    enabled: bool = field(init=False, default=False)
 
-        Args:
-            provider: LLM provider to use ("openai", "anthropic", or "ollama")
-            api_key: Optional API key for LLM service (not needed for Ollama)
-            model: Optional model name override
-            ollama_base_url: Base URL for Ollama API (default: http://localhost:11434)
-        """
-        self.provider = provider
-        self.api_key = api_key or getenv(f"{provider.upper()}_API_KEY")
-        self.ollama_base_url = ollama_base_url
+    def __post_init__(self):
+
+        if not self.api_key:
+            env_key = f"{self.provider.upper()}_API_KEY"
+            debug(f"No API key provided, checking environment variables for {env_key}")
+            if env_key:
+                info(f"Using API key from environment variable {env_key}")
+
+                self.api_key = getenv(env_key)
 
         # Set default models
-        if model:
-            self.model = model
-        elif provider == "openai":
-            self.model = "gpt-4o-mini"
-        elif provider == "anthropic":
-            self.model = "claude-3-haiku-20240307"
-        elif provider == "ollama":
-            self.model = "llama3.2"
-
-        # Initialize provider client
-        self.client = None
-        self.enabled = False
+        if not self.model:
+            match self.provider:
+                case "openai":
+                    self.model = "gpt-4o-mini"
+                case "anthropic":
+                    self.model = "claude-3-haiku-20240307"
+                case "ollama":
+                    self.model = "gemma3:270m"
 
         try:
-            if provider == "openai" and self.api_key:
-                from openai import OpenAI
-
+            if self.provider == "openai" and self.api_key:
                 self.client = OpenAI(api_key=self.api_key)
                 self.enabled = True
-            elif provider == "anthropic" and self.api_key:
-                from anthropic import Anthropic
-
+            elif self.provider == "anthropic" and self.api_key:
                 self.client = Anthropic(api_key=self.api_key)
                 self.enabled = True
-            elif provider == "ollama":
+            elif self.provider == "ollama":
                 try:
-                    from ollama import Client
-
                     self.client = Client(host=self.ollama_base_url)
                     # Test connection
                     self.client.list()
@@ -74,11 +79,10 @@ class LLMEnricher:
                     response = get(f"{self.ollama_base_url}/api/tags")
                     if response.status_code == 200:
                         self.enabled = True
-        except ImportError:
-            pass
+        except ImportError as ie:
+            error(f"LLM client import error: {ie}")
         except Exception as e:
             error(e)
-            pass
 
     def analyze_column(
         self, column_name: str, sample_values: List[str], dtype: str, properties: Dict[str, Any]
@@ -108,8 +112,9 @@ class LLMEnricher:
         try:
             response = self._call_llm(prompt)
             return self._parse_llm_response(response)
-        except Exception:
+        except Exception as e:
             # Fallback to heuristic-based analysis
+            error(f"LLM analysis failed: {e}, falling back to heuristic.")
             return {
                 "description": f"Column '{column_name}' of type {dtype}",
                 "semantic_type": self._infer_semantic_type(column_name),
@@ -137,46 +142,38 @@ Please provide a JSON response with:
 Respond with valid JSON only."""
         return prompt
 
-    def _call_llm(self, prompt: str) -> str:
+    def _call_llm(self, prompt: str) -> Optional[str]:
         """Call the appropriate LLM provider."""
+        sys = "You are a data analyst expert. Provide JSON responses only."
         if self.provider == "openai":
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {
-                        "role": "system",
-                        "content": "You are a data analyst expert. Provide JSON responses only.",
-                    },
-                    {"role": "user", "content": prompt},
+                    ChatCompletionSystemMessageParam(content=sys),
+                    ChatCompletionUserMessageParam(content=prompt),
                 ],
                 temperature=0.1,
                 max_tokens=500,
             )
-            return response.choices[0].message.content
+            return response.choices[0].message.content or ""
 
         elif self.provider == "anthropic":
             response = self.client.messages.create(
                 model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                system="You are a data analyst expert. Provide JSON responses only.",
+                messages=[MessageParam(role="user", content=prompt)],
+                system=sys,
                 temperature=0.1,
                 max_tokens=500,
             )
-            return response.content[0].text
+            return str(response.content[0].text)
 
         elif self.provider == "ollama":
             if hasattr(self.client, "chat"):
                 # Using ollama Python package
-                response = self.client.chat(
+                response = self.client.generate(
                     model=self.model,
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": "You are a data analyst expert. "
-                            "Provide JSON responses only.",
-                        },
-                        {"role": "user", "content": prompt},
-                    ],
+                    prompt=prompt,
+                    system=sys,
                     options={"temperature": 0.1},
                 )
                 return response["message"]["content"]
@@ -207,14 +204,15 @@ Respond with valid JSON only."""
         """Parse LLM response and extract structured data."""
         try:
             # Try to extract JSON from response
-            import re
 
-            json_match = re.search(r"\{.*\}", response, re.DOTALL)
+            json_match = search(r"\{.*\}", response, DOTALL)
             if json_match:
                 return loads(json_match.group())
             return loads(response)
-        except Exception:
-            # Return empty dict if parsing fails
+        except Exception as e:
+            error(
+                f"Failed to parse LLM response: {e}, response was: {response}. returning empty dict."
+            )
             return {}
 
     def _infer_semantic_type(self, column_name: str) -> str:

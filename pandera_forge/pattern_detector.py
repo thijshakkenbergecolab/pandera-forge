@@ -157,7 +157,7 @@ class PatternDetector:
                 continue
 
             char_pattern = ""
-            for char in value:
+            for char in str(value):
                 if char.isdigit():
                     char_pattern += r"\d"
                 elif char.isalpha():
