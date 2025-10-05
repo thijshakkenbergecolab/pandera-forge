@@ -6,6 +6,8 @@ from traceback import format_exc
 from typing import Any, Dict, Optional
 from pandas import DataFrame
 
+from .constants import PANDERA_IMPORTS
+
 
 class ModelValidator:
     """Validates generated Pandera models"""
@@ -22,14 +24,7 @@ class ModelValidator:
             # Create a namespace for execution
             namespace: Dict[str, Any] = {}
             # Add necessary imports to namespace
-            exec(
-                """
-from pandera.pandas import Timestamp, DataFrameModel, Field
-from pandera.typing import Series, Int64, Int32, Int16, Int8, Float64, Float32, Float16, String, Bool, DateTime, Category, Object
-from typing import Optional
-            """,
-                namespace,
-            )
+            exec(PANDERA_IMPORTS, namespace)
 
             # Execute the model code
             exec(model_code, namespace)
@@ -60,14 +55,7 @@ from typing import Optional
             namespace: Dict[str, Any] = {}
 
             # Add necessary imports
-            exec(
-                """
-from pandera.pandas import Timestamp, DataFrameModel, Field
-from pandera.typing.pandas import Series, Int64, Int32, Int16, Int8, Float64, Float32, Float16, String, Bool, DateTime, Category, Object
-from typing import Optional
-            """,
-                namespace,
-            )
+            exec(PANDERA_IMPORTS, namespace)
 
             # Execute the model code
             exec(model_code, namespace)
