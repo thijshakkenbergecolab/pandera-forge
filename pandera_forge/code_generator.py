@@ -6,6 +6,8 @@ from typing import Any, Dict, Optional, Union
 
 from pandas import notna, isna
 
+from .constants import PANDERA_IMPORTS
+
 
 class CodeGenerator:
     """Generates Python code strings for Pandera models"""
@@ -65,7 +67,7 @@ class CodeGenerator:
                     formatted_examples.append(str(ex))
                 else:
                     # For other types, convert to string and quote
-                    formatted_examples.append(f"{str(ex)}")
+                    formatted_examples.append(f"'{str(ex)}'")
 
             if formatted_examples:
                 field_params.append(f"isin=[{', '.join(formatted_examples)}]")
@@ -107,9 +109,7 @@ class CodeGenerator:
     @staticmethod
     def generate_imports() -> str:
         """Generate import statements for the model"""
-        return """from pandera.pandas import Timestamp, DataFrameModel, Field
-from pandera.typing.pandas import Series, Int64, Int32, Int16, Int8, Float64, Float32, Float16, String, Bool, DateTime, Category, Object
-from typing import Optional"""
+        return PANDERA_IMPORTS
 
     @staticmethod
     def generate_class_definition(class_name: str, fields: list[str]) -> str:
