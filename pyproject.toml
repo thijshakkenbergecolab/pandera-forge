@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Automatic Pandera DataFrameModel generator from pandas DataFrames"
 readme = "README.md"
 authors = [
-    {name = "Thijs Hakkenberg", email = "your.email@example.com"}
+    {name = "Thijs Hakkenberg", email = "thijs.hakkenberg@ecolab.com"}
 ]
 license = {text = "MIT"}
 classifiers = [
