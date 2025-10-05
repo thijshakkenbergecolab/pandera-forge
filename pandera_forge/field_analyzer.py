@@ -66,8 +66,14 @@ class FieldAnalyzer:
         try:
             # Get value counts without converting to string to preserve types
             value_counts = column.value_counts()
-            top_values = value_counts.nlargest(num_samples)
-            return top_values.index.tolist()
+
+            # If there are 10 or fewer unique values, get ALL of them for isin constraint
+            if len(value_counts) <= 10:
+                return value_counts.index.tolist()
+            else:
+                # Otherwise get the top N most common values
+                top_values = value_counts.nlargest(num_samples)
+                return top_values.index.tolist()
         except (TypeError, ValueError):
             # If value_counts fails (e.g., unhashable types), try to get a few non-null samples
             try:

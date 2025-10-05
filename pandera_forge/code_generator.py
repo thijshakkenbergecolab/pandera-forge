@@ -50,9 +50,12 @@ class CodeGenerator:
         if properties.get("is_nullable"):
             field_params.append("nullable=True")
 
-        # Add examples as isin parameter if present
+        # Add examples as isin parameter if present, but only for truly limited value sets
         examples = properties.get("examples", [])
-        if examples:
+        distinct_count = properties.get("distinct_count")
+
+        # Only use isin constraint for columns with 10 or fewer unique values
+        if examples and distinct_count is not None and distinct_count <= 10:
             # Format examples based on their type
             formatted_examples = []
             for ex in examples:

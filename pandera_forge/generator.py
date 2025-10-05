@@ -2,9 +2,11 @@
 Main generator class that orchestrates the model generation process
 """
 
+from logging import error
 from pathlib import Path
-from typing import Optional
-from pandas import DataFrame
+from typing import Optional, List, Dict
+from pandas import DataFrame, read_csv, ExcelFile
+from xlrd import XLRDError
 
 from .code_generator import CodeGenerator
 from .field_analyzer import FieldAnalyzer
@@ -99,6 +101,113 @@ class ModelGenerator:
             full_code += "\n\n" + implementation
 
         return full_code
+
+    def from_csv(
+        self,
+        csv_path: Path,
+        validate: bool = True,
+        include_examples: bool = True,
+        detect_patterns: bool = True,
+    ) -> Optional[str]:
+        """
+        Generate a Pandera DataFrameModel from a CSV file.
+
+        Args:
+            csv_path: Path to the CSV file
+            validate: Whether to validate the generated model
+            include_examples: Whether to include example values in comments
+            detect_patterns: Whether to detect patterns in string columns
+        Returns:
+            Generated model code as string, or None if generation failed
+        """
+
+        # Read the CSV file into a DataFrame
+
+        try:
+            df = read_csv(csv_path)
+        except UnicodeError as ue:
+            # encoding='latin-1
+            try:
+                print(f"UnicodeError reading {csv_path}, trying latin-1 encoding: {ue}")
+                df = read_csv(csv_path, encoding="latin-1")  # type: ignore
+            except Exception as e:
+                print(f"Error reading CSV file {csv_path} with latin-1 encoding: {e}")
+                return None
+
+        except Exception as e:
+            print(f"Error reading CSV file {csv_path}: {e}")
+            return None
+        model_name = csv_path.stem.replace(" ", "_").replace("-", "_")
+        return self.generate(
+            df,
+            model_name=model_name,
+            validate=validate,
+            include_examples=include_examples,
+            detect_patterns=detect_patterns,
+            source_file=csv_path,
+        )
+
+    def from_excel(
+        self,
+        xlsx_path: Path,
+        validate: bool = True,
+        include_examples: bool = True,
+        detect_patterns: bool = True,
+    ) -> Dict[str, str]:
+        """
+        Generate a Pandera DataFrameModel from an Excel file.
+
+        Args:
+            xlsx_path: Path to the Excel file
+            validate: Whether to validate the generated model
+            include_examples: Whether to include example values in comments
+            detect_patterns: Whether to detect patterns in string columns
+        Returns:
+            Generated model code as string, or None if generation failed
+        """
+
+        # Read the Excel file into a DataFrame / set of dataframes
+        models = {}
+        try:
+            file = ExcelFile(xlsx_path)
+        except XLRDError as xe:
+            error(f"XLRDError reading {xlsx_path}, it might be an unsupported format: {xe}")
+            return models
+        if len(file.sheet_names) > 1:
+            for sheet in file.sheet_names:
+                try:
+                    df = file.parse(sheet_name=sheet)
+                    print(f"Sheet: {sheet}, Rows: {len(df)}, Columns: {len(df.columns)}")
+                    model_name = f"{xlsx_path.stem}_{sheet}".replace(" ", "_").replace("-", "_")
+                    model_code = self.generate(
+                        df,
+                        model_name=model_name,
+                        validate=validate,
+                        include_examples=include_examples,
+                        detect_patterns=detect_patterns,
+                        source_file=xlsx_path,
+                    )
+                    if model_code:
+                        models[sheet] = model_code
+                except Exception as e:
+                    error(f"Error reading sheet {sheet} in {xlsx_path}: {e}")
+        else:
+            try:
+                df = file.parse(sheet_name=file.sheet_names[0])
+                model_name = xlsx_path.stem.replace(" ", "_").replace("-", "_")
+                model_code = self.generate(
+                    df,
+                    model_name=model_name,
+                    validate=validate,
+                    include_examples=include_examples,
+                    detect_patterns=detect_patterns,
+                    source_file=xlsx_path,
+                )
+                if model_code:
+                    models[xlsx_path.stem] = model_code
+            except Exception as e:
+                error(f"Error reading Excel file {xlsx_path}: {e}")
+        return models
 
     def _generate_field(
         self,
