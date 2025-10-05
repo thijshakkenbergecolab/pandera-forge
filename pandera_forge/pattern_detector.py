@@ -11,13 +11,13 @@ from pydantic import BaseModel
 
 
 class StringConstraints(BaseModel):
-    min_length: Optional[int]
-    max_length: Optional[int]
-    pattern: Optional[str]
-    pattern_name: Optional[str]
-    starts_with: Optional[str]
-    ends_with: Optional[str]
-    contains: Optional[list[str]]
+    min_length: Optional[int] = None
+    max_length: Optional[int] = None
+    pattern: Optional[str] = None
+    pattern_name: Optional[str] = None
+    starts_with: Optional[str] = None
+    ends_with: Optional[str] = None
+    contains: Optional[list[str]] = None
 
 
 class PatternDetector:

@@ -122,7 +122,7 @@ class TestPatternDetector:
         assert pattern_result is None
 
         constraints = PatternDetector.infer_string_constraints(series)
-        assert constraints.model_fields == {}
+        assert constraints.model_dump(exclude_unset=True, exclude_none=True) == {}
 
     def test_null_values_handling(self):
         """Test handling of series with null values"""

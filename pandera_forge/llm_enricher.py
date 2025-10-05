@@ -3,7 +3,7 @@ LLM-based enrichment for enhanced pattern detection and documentation
 """
 
 from json import dumps, loads
-from os import getenv, error
+from os import error, getenv
 from typing import Any, Dict, List, Literal, Optional
 
 
