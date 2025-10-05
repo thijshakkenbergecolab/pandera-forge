@@ -3,6 +3,7 @@ Type mapping utilities for converting pandas dtypes to pandera types
 """
 
 from typing import Dict, Optional, Type
+
 from pandera.typing.pandas import (
     Bool,
     Category,

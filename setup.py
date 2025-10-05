@@ -7,4 +7,15 @@ Configuration is primarily in pyproject.toml.
 from setuptools import setup
 
 if __name__ == "__main__":
-    setup(install_requires=['pandas', 'httpx', 'ollama', 'pandera'])
+    setup(
+        install_requires=[
+            "pandas",
+            "httpx",
+            "ollama",
+            "pandera",
+            "numpy",
+            "pydantic",
+            "anthropic",
+            "openai",
+        ]
+    )

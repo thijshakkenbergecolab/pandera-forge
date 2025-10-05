@@ -1,6 +1,7 @@
 """Tests for the ModelGenerator class"""
 
-from pandas import DataFrame, to_datetime, Categorical
+from pandas import Categorical, DataFrame, to_datetime
+
 from pandera_forge import ModelGenerator
 
 
@@ -38,7 +39,7 @@ class TestModelGenerator:
         model_code = generator.generate(df, "NullableModel")
 
         # Check that nullable_col has nullable=True
-        nullable_line = [line for line in model_code.split('\n') if 'nullable_col' in line][0]
+        nullable_line = [line for line in model_code.split("\n") if "nullable_col" in line][0]
         assert "nullable=True" in nullable_line
         assert "Series[Float64]" in nullable_line
         assert "nullable=True" not in model_code.split("non_nullable_col")[1].split("\n")[0]

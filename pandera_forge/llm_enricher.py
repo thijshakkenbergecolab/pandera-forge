@@ -3,8 +3,8 @@ LLM-based enrichment for enhanced pattern detection and documentation
 """
 
 from json import dumps, loads
-from os import getenv
-from typing import Dict, List, Optional, Any, Literal
+from os import getenv, error
+from typing import Any, Dict, List, Literal, Optional
 
 
 class LLMEnricher:
@@ -66,7 +66,8 @@ class LLMEnricher:
                     # Test connection
                     self.client.list()
                     self.enabled = True
-                except Exception:
+                except Exception as e:
+                    error(f"Ollama client error: {e}, falling back to httpx get")
                     # Fallback to requests-based implementation
                     from httpx import get
 
@@ -75,7 +76,8 @@ class LLMEnricher:
                         self.enabled = True
         except ImportError:
             pass
-        except Exception:
+        except Exception as e:
+            error(e)
             pass
 
     def analyze_column(
@@ -170,7 +172,8 @@ Respond with valid JSON only."""
                     messages=[
                         {
                             "role": "system",
-                            "content": "You are a data analyst expert. Provide JSON responses only.",
+                            "content": "You are a data analyst expert. "
+                            "Provide JSON responses only.",
                         },
                         {"role": "user", "content": prompt},
                     ],

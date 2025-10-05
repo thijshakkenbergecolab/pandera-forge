@@ -5,8 +5,8 @@ Pandere Forge - Automatic Pandera DataFrameModel generator from pandas DataFrame
 __version__ = "0.1.0"
 
 from .generator import ModelGenerator
-from .validator import ModelValidator
-from .pattern_detector import PatternDetector
 from .llm_enricher import LLMEnricher
+from .pattern_detector import PatternDetector
+from .validator import ModelValidator
 
 __all__ = ["ModelGenerator", "ModelValidator", "PatternDetector", "LLMEnricher"]

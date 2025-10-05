@@ -2,7 +2,8 @@
 Field analysis utilities for extracting column properties
 """
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List
+
 from pandas import DataFrame, Series, notna
 from pandas.core.dtypes.common import is_numeric_dtype
 
@@ -21,11 +22,11 @@ class FieldAnalyzer:
                 - is_nullable: bool
                 - min_value: numeric or None
                 - max_value: numeric or None
-                - examples: List[str]
-                - distinct_count: int
+                - examples: List[Any]
+                - distinct_count: int or None
         """
         column = df[column_name]
-        properties = {}
+        properties: Dict[str, Any] = {}
 
         # Check uniqueness
         try:

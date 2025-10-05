@@ -2,9 +2,22 @@
 Pattern detection and enrichment utilities for string columns
 """
 
+from logging import error
 from re import escape
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
+
 from pandas import Series
+from pydantic import BaseModel
+
+
+class StringConstraints(BaseModel):
+    min_length: Optional[int]
+    max_length: Optional[int]
+    pattern: Optional[str]
+    pattern_name: Optional[str]
+    starts_with: Optional[str]
+    ends_with: Optional[str]
+    contains: Optional[list[str]]
 
 
 class PatternDetector:
@@ -60,14 +73,15 @@ class PatternDetector:
                 match_ratio = matches.sum() / len(str_series)
 
                 if match_ratio >= min_match_ratio:
-                    return (pattern_name, pattern_regex)
-            except:
+                    return pattern_name, pattern_regex
+            except Exception as e:
+                error(f"Error applying pattern {pattern_name}: {e}")
                 continue
 
         return None
 
     @classmethod
-    def infer_string_constraints(cls, series: Series) -> Dict[str, any]:
+    def infer_string_constraints(cls, series: Series) -> StringConstraints:
         """
         Infer string-specific constraints from a series.
 
@@ -81,11 +95,11 @@ class PatternDetector:
                 - ends_with: str
                 - contains: List[str]
         """
-        constraints = {}
+        constraints: Dict[str, Any] = {}
         str_series = series.dropna().astype(str)
 
         if len(str_series) == 0:
-            return constraints
+            return StringConstraints.model_validate(constraints)
 
         # Length constraints
         lengths = str_series.str.len()
@@ -104,17 +118,17 @@ class PatternDetector:
             first_chars = str_series.str[:3].value_counts()
             if len(first_chars) == 1:
                 common_prefix = first_chars.index[0]
-                if all(str_series.str.startswith(common_prefix)):
-                    constraints["starts_with"] = common_prefix
+                if all(str_series.str.startswith(str(common_prefix))):
+                    constraints["starts_with"] = str(common_prefix)
 
             # Check for common suffix
             last_chars = str_series.str[-3:].value_counts()
             if len(last_chars) == 1:
                 common_suffix = last_chars.index[0]
-                if all(str_series.str.endswith(common_suffix)):
-                    constraints["ends_with"] = common_suffix
+                if all(str_series.str.endswith(str(common_suffix))):
+                    constraints["ends_with"] = str(common_suffix)
 
-        return constraints
+        return StringConstraints.model_validate(constraints)
 
     @classmethod
     def generate_custom_regex(cls, series: Series, sample_size: int = 100) -> Optional[str]:

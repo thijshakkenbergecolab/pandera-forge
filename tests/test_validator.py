@@ -1,6 +1,5 @@
 """Tests for validator module"""
 
-import pytest
 from pandas import DataFrame
 
 from pandera_forge.validator import ModelValidator
@@ -62,10 +61,7 @@ class TestModel(DataFrameModel):
 
     def test_validate_against_dataframe_success(self):
         """Test successful validation against DataFrame"""
-        df = DataFrame({
-            "col1": [1, 2, 3],
-            "col2": ["a", "b", "c"]
-        })
+        df = DataFrame({"col1": [1, 2, 3], "col2": ["a", "b", "c"]})
 
         model_code = """
 class TestModel(DataFrameModel):
@@ -73,9 +69,7 @@ class TestModel(DataFrameModel):
     col2: Series[Object] = Field()
 """
 
-        is_valid, error = ModelValidator.validate_against_dataframe(
-            model_code, "TestModel", df
-        )
+        is_valid, error = ModelValidator.validate_against_dataframe(model_code, "TestModel", df)
 
         assert is_valid is True
         assert error is None
@@ -89,27 +83,21 @@ class WrongModel(DataFrameModel):
     col1: Series[Int64] = Field()
 """
 
-        is_valid, error = ModelValidator.validate_against_dataframe(
-            model_code, "TestModel", df
-        )
+        is_valid, error = ModelValidator.validate_against_dataframe(model_code, "TestModel", df)
 
         assert is_valid is False
         assert "Class TestModel not found" in error
 
     def test_validate_against_dataframe_validation_error(self):
         """Test validation failure against DataFrame"""
-        df = DataFrame({
-            "col1": ["not", "an", "integer"]  # String values for Int64 field
-        })
+        df = DataFrame({"col1": ["not", "an", "integer"]})  # String values for Int64 field
 
         model_code = """
 class TestModel(DataFrameModel):
     col1: Series[Int64] = Field()
 """
 
-        is_valid, error = ModelValidator.validate_against_dataframe(
-            model_code, "TestModel", df
-        )
+        is_valid, error = ModelValidator.validate_against_dataframe(model_code, "TestModel", df)
 
         assert is_valid is False
         assert "Validation error" in error

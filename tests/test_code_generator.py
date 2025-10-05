@@ -1,8 +1,6 @@
 """Tests for code_generator module"""
 
-import pytest
-from pandas import DataFrame, Series, NaT
-import numpy as np
+from numpy import nan
 
 from pandera_forge.code_generator import CodeGenerator
 
@@ -12,10 +10,7 @@ class TestCodeGenerator:
 
     def test_generate_comment_with_examples_and_distinct(self):
         """Test comment generation with examples and distinct count"""
-        properties = {
-            "examples": ["val1", "val2", "val3"],
-            "distinct_count": 10
-        }
+        properties = {"examples": ["val1", "val2", "val3"], "distinct_count": 10}
 
         comment = CodeGenerator.generate_comment(properties)
         assert "10 distinct values" in comment
@@ -24,9 +19,7 @@ class TestCodeGenerator:
 
     def test_generate_comment_with_examples_only(self):
         """Test comment generation with only examples"""
-        properties = {
-            "examples": [1, 2, 3]
-        }
+        properties = {"examples": [1, 2, 3]}
 
         comment = CodeGenerator.generate_comment(properties)
         assert "examples:" in comment
@@ -42,17 +35,14 @@ class TestCodeGenerator:
 
     def test_generate_field_string_with_nan_in_examples(self):
         """Test field generation with NaN values in examples"""
-        properties = {
-            "examples": [1.0, np.nan, 3.0],
-            "is_nullable": True
-        }
+        properties = {"examples": [1.0, nan, 3.0], "is_nullable": True}
 
         field_str = CodeGenerator.generate_field_string(
             field_name="test_field",
             pandera_type="Float64",
             properties=properties,
             original_column_name="test_field",
-            needs_alias=False
+            needs_alias=False,
         )
 
         # NaN should be skipped in isin list
@@ -68,7 +58,7 @@ class TestCodeGenerator:
             pandera_type="Int64",
             properties=properties,
             original_column_name=0,
-            needs_alias=True
+            needs_alias=True,
         )
 
         assert "alias=0" in field_str
@@ -83,7 +73,7 @@ class TestCodeGenerator:
             pandera_type="String",
             properties=properties,
             original_column_name="my-column",
-            needs_alias=True
+            needs_alias=True,
         )
 
         assert 'alias="my-column"' in field_str
@@ -97,10 +87,7 @@ class TestCodeGenerator:
 
     def test_generate_class_definition_with_fields(self):
         """Test class definition with fields"""
-        fields = [
-            "\tfield1: Series[Int64] = Field()",
-            "\tfield2: Series[String] = Field()"
-        ]
+        fields = ["\tfield1: Series[Int64] = Field()", "\tfield2: Series[String] = Field()"]
 
         class_def = CodeGenerator.generate_class_definition("TestModel", fields)
 
