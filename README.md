@@ -58,12 +58,14 @@ from typing import Optional
 
 
 class CustomerModel(DataFrameModel):
-    customer_id: Series[Int64] = Field(ge=1, le=4, unique=True)  # 4 distinct values, examples: [1, 2, 3]
+    customer_id: Series[Int64] = Field(ge=1, le=4, unique=True, isin=[1,2,3,4])  # 4 distinct values, examples: [1, 2, 3]
     email: Series[Object] = Field(unique=True)  # 4 distinct values, examples: ["alice@example.com", "bob@example.com", "charlie@example.com"], pattern: email
-    age: Series[Int64] = Field(ge=25, le=40, unique=True)  # 4 distinct values, examples: [25, 30, 35]
-    is_active: Series[Bool] = Field()  # 2 distinct values, examples: ["True", "False"]
+    age: Series[Int64] = Field(ge=25, le=40, unique=True, isin=[25, 30, 35, 40])  # 4 distinct values, examples: [25, 30, 35]
+    is_active: Series[Bool] = Field(isin=[True, False])  # 2 distinct values, examples: ["True", "False"]
     signup_date: Series[DateTime] = Field(unique=True)  # 4 distinct values, examples: ["2023-01-01 00:00:00", "2023-01-02 00:00:00", "2023-01-03 00:00:00"]
 ```
+
+n.b. the values for the datetimes and emails would also be included in the isin= list, but are omitted for brevity. If the distinct count of a column exceeds 10, the `isin` constraint is omitted.
 
 ## Advanced Usage
 
