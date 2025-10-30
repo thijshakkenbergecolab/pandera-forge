@@ -47,6 +47,15 @@ llm = [
     "ollama>=0.3.0",
     "requests>=2.31.0",
 ]
+spark = [
+    "pyspark>=3.0.0",
+]
+databricks = [
+    "pyspark>=3.0.0",
+    "databricks-sdk>=0.20.0",
+    "databricks-sql-connector>=3.0.0",
+    "databricks-connect>=14.0.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/thijshakkenbergecolab/pandera-forge"

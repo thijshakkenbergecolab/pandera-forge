@@ -4,7 +4,7 @@ Main generator class that orchestrates the model generation process
 
 from logging import error
 from pathlib import Path
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any, Union
 from pandas import DataFrame, read_csv, ExcelFile
 from xlrd import XLRDError
 
@@ -15,29 +15,50 @@ from .name_sanitizer import NameSanitizer
 from .pattern_detector import PatternDetector
 from .type_mapper import TypeMapper
 from .validator import ModelValidator
+from .pandas.pandas_generator import PandasGenerator
 
 
 class ModelGenerator:
-    """Main class for generating Pandera models from DataFrames"""
+    """
+    Main class for generating Pandera models from DataFrames.
+
+    This class now acts as a factory that delegates to the appropriate
+    implementation based on the DataFrame type (pandas or Spark).
+    """
 
     def __init__(
-        self, llm_api_key: Optional[str] = None, llm_enricher: Optional[LLMEnricher] = None
+        self,
+        llm_api_key: Optional[str] = None,
+        llm_enricher: Optional[LLMEnricher] = None,
+        backend: str = "pandas"
     ):
-        self.type_mapper = TypeMapper()
-        self.name_sanitizer = NameSanitizer()
-        self.field_analyzer = FieldAnalyzer()
-        self.code_generator = CodeGenerator()
-        self.validator = ModelValidator()
-        self.pattern_detector = PatternDetector()
-        # Allow passing a pre-configured LLMEnricher or create one with API key
-        if llm_enricher:
-            self.llm_enricher = llm_enricher
-        else:
-            self.llm_enricher = LLMEnricher(api_key=llm_api_key)
+        """
+        Initialize the ModelGenerator.
+
+        Args:
+            llm_api_key: Optional API key for LLM enrichment
+            llm_enricher: Optional pre-configured LLM enricher
+            backend: Backend to use ("pandas", "spark", or "auto")
+        """
+        self.llm_api_key = llm_api_key
+        self.llm_enricher = llm_enricher
+        self.backend = backend
+
+        # For backward compatibility, keep pandas components as defaults
+        self._pandas_generator = PandasGenerator(llm_api_key, llm_enricher)
+        self._spark_generator = None
+
+        # Legacy attributes for backward compatibility
+        self.type_mapper = self._pandas_generator.type_mapper
+        self.name_sanitizer = self._pandas_generator.name_sanitizer
+        self.field_analyzer = self._pandas_generator.field_analyzer
+        self.code_generator = self._pandas_generator.code_generator
+        self.validator = self._pandas_generator.validator
+        self.pattern_detector = self._pandas_generator.pattern_detector
 
     def generate(
         self,
-        df: DataFrame,
+        df: Any,
         model_name: str = "DataFrameModel",
         validate: bool = True,
         include_examples: bool = True,
@@ -45,10 +66,12 @@ class ModelGenerator:
         source_file: Optional[Path] = None,
     ) -> Optional[str]:
         """
-        Generate a Pandera DataFrameModel from a pandas DataFrame.
+        Generate a Pandera DataFrameModel from a DataFrame.
+
+        Automatically detects the DataFrame type and uses the appropriate generator.
 
         Args:
-            df: Source DataFrame
+            df: Source DataFrame (pandas or Spark)
             model_name: Name for the generated model class
             validate: Whether to validate the generated model
             include_examples: Whether to include example values in comments
@@ -58,49 +81,57 @@ class ModelGenerator:
         Returns:
             Generated model code as string, or None if generation failed
         """
-        # Sanitize the model name
-        sanitized_model_name = self.name_sanitizer.sanitize_class_name(model_name)
+        # Detect DataFrame type and delegate to appropriate generator
+        generator = self._get_generator_for_dataframe(df)
 
-        # Generate fields for each column
-        fields = []
-        for column in df.columns:
-            field_code = self._generate_field(df, column, include_examples, detect_patterns)
-            if field_code:
-                fields.append(field_code)
+        return generator.generate(
+            df=df,
+            model_name=model_name,
+            validate=validate,
+            include_examples=include_examples,
+            detect_patterns=detect_patterns,
+            source_file=source_file
+        )
 
-        if not fields:
-            print(f"Warning: No valid fields generated for model {sanitized_model_name}")
-            return None
+    def _get_generator_for_dataframe(self, df: Any):
+        """
+        Get the appropriate generator based on DataFrame type.
 
-        # Generate the class definition
-        class_code = self.code_generator.generate_class_definition(sanitized_model_name, fields)
+        Args:
+            df: The DataFrame to analyze
 
-        # Generate complete code with imports
-        full_code = self.code_generator.generate_imports() + "\n\n\n" + class_code
+        Returns:
+            Appropriate generator instance
+        """
+        # Check if it's a Spark DataFrame
+        try:
+            from pyspark.sql import DataFrame as SparkDataFrame
 
-        # Validate if requested
-        if validate:
-            is_valid, error = self.validator.validate_model_code(full_code, sanitized_model_name)
-            if not is_valid:
-                print(f"Warning: Generated model has syntax errors: {error}")
-                return None
+            if isinstance(df, SparkDataFrame):
+                if self._spark_generator is None:
+                    from .spark.spark_generator import SparkGenerator
+                    self._spark_generator = SparkGenerator(
+                        self.llm_api_key, self.llm_enricher
+                    )
+                return self._spark_generator
+        except ImportError:
+            pass
 
-            # Validate against DataFrame
-            is_valid, error = self.validator.validate_against_dataframe(
-                class_code, sanitized_model_name, df
-            )
-            if not is_valid:
-                print(f"Warning: Model validation against DataFrame failed: {error}")
-                return None
+        # Check if it's a pandas DataFrame
+        if isinstance(df, DataFrame):
+            return self._pandas_generator
 
-        # Add implementation example if source file provided
-        if source_file:
-            implementation = self._generate_implementation_example(
-                sanitized_model_name, source_file
-            )
-            full_code += "\n\n" + implementation
+        # If backend is explicitly set to spark, try to use Spark generator
+        if self.backend == "spark":
+            if self._spark_generator is None:
+                from .spark.spark_generator import SparkGenerator
+                self._spark_generator = SparkGenerator(
+                    self.llm_api_key, self.llm_enricher
+                )
+            return self._spark_generator
 
-        return full_code
+        # Default to pandas generator
+        return self._pandas_generator
 
     def from_csv(
         self,
@@ -112,6 +143,8 @@ class ModelGenerator:
         """
         Generate a Pandera DataFrameModel from a CSV file.
 
+        For backward compatibility, this delegates to the pandas generator.
+
         Args:
             csv_path: Path to the CSV file
             validate: Whether to validate the generated model
@@ -120,31 +153,11 @@ class ModelGenerator:
         Returns:
             Generated model code as string, or None if generation failed
         """
-
-        # Read the CSV file into a DataFrame
-
-        try:
-            df = read_csv(csv_path)
-        except UnicodeError as ue:
-            # encoding='latin-1
-            try:
-                print(f"UnicodeError reading {csv_path}, trying latin-1 encoding: {ue}")
-                df = read_csv(csv_path, encoding="latin-1")  # type: ignore
-            except Exception as e:
-                print(f"Error reading CSV file {csv_path} with latin-1 encoding: {e}")
-                return None
-
-        except Exception as e:
-            print(f"Error reading CSV file {csv_path}: {e}")
-            return None
-        model_name = csv_path.stem.replace(" ", "_").replace("-", "_")
-        return self.generate(
-            df,
-            model_name=model_name,
+        return self._pandas_generator.from_csv(
+            csv_path=csv_path,
             validate=validate,
             include_examples=include_examples,
-            detect_patterns=detect_patterns,
-            source_file=csv_path,
+            detect_patterns=detect_patterns
         )
 
     def from_excel(
@@ -155,7 +168,9 @@ class ModelGenerator:
         detect_patterns: bool = True,
     ) -> Dict[str, str]:
         """
-        Generate a Pandera DataFrameModel from an Excel file.
+        Generate Pandera DataFrameModels from an Excel file.
+
+        For backward compatibility, this delegates to the pandas generator.
 
         Args:
             xlsx_path: Path to the Excel file
@@ -163,51 +178,14 @@ class ModelGenerator:
             include_examples: Whether to include example values in comments
             detect_patterns: Whether to detect patterns in string columns
         Returns:
-            Generated model code as string, or None if generation failed
+            Dictionary mapping sheet names to generated model code
         """
-
-        # Read the Excel file into a DataFrame / set of dataframes
-        models = {}
-        try:
-            file = ExcelFile(xlsx_path)
-        except XLRDError as xe:
-            error(f"XLRDError reading {xlsx_path}, it might be an unsupported format: {xe}")
-            return models
-        if len(file.sheet_names) > 1:
-            for sheet in file.sheet_names:
-                try:
-                    df = file.parse(sheet_name=sheet)
-                    print(f"Sheet: {sheet}, Rows: {len(df)}, Columns: {len(df.columns)}")
-                    model_name = f"{xlsx_path.stem}_{sheet}".replace(" ", "_").replace("-", "_")
-                    model_code = self.generate(
-                        df,
-                        model_name=model_name,
-                        validate=validate,
-                        include_examples=include_examples,
-                        detect_patterns=detect_patterns,
-                        source_file=xlsx_path,
-                    )
-                    if model_code:
-                        models[sheet] = model_code
-                except Exception as e:
-                    error(f"Error reading sheet {sheet} in {xlsx_path}: {e}")
-        else:
-            try:
-                df = file.parse(sheet_name=file.sheet_names[0])
-                model_name = xlsx_path.stem.replace(" ", "_").replace("-", "_")
-                model_code = self.generate(
-                    df,
-                    model_name=model_name,
-                    validate=validate,
-                    include_examples=include_examples,
-                    detect_patterns=detect_patterns,
-                    source_file=xlsx_path,
-                )
-                if model_code:
-                    models[xlsx_path.stem] = model_code
-            except Exception as e:
-                error(f"Error reading Excel file {xlsx_path}: {e}")
-        return models
+        return self._pandas_generator.from_excel(
+            xlsx_path=xlsx_path,
+            validate=validate,
+            include_examples=include_examples,
+            detect_patterns=detect_patterns
+        )
 
     def _generate_field(
         self,
@@ -216,75 +194,80 @@ class ModelGenerator:
         include_examples: bool = True,
         detect_patterns: bool = True,
     ) -> Optional[str]:
-        """Generate field definition for a single column"""
-        # Get pandera type
-        dtype_str = str(df[column].dtype)
-        # Handle timestamp types
-        if "datetime64" in dtype_str:
-            dtype_str = "datetime64[ns]"
-        pandera_type = self.type_mapper.get_pandera_type(dtype_str)
+        """
+        Generate field definition for a single column.
 
-        if not pandera_type:
-            print(f"Warning: No Pandera type mapping for dtype {dtype_str} in column {column}")
-            return None
-
-        # Sanitize column name
-        sanitized_name, is_valid_name = self.name_sanitizer.sanitize_column_name(column)
-
-        # Analyze column properties
-        properties = self.field_analyzer.analyze_column(df, column)
-
-        # Detect patterns for string columns if enabled
-        if detect_patterns and pandera_type.__name__ in ["String", "Object"]:
-            pattern_result = self.pattern_detector.detect_pattern(df[column])
-            if pattern_result:
-                properties["pattern_name"] = pattern_result[0]
-                properties["pattern"] = pattern_result[1]
-
-            # Get string constraints
-            string_constraints = self.pattern_detector.infer_string_constraints(df[column])
-            properties.update(string_constraints)
-
-        # Generate field string
-        field_str = self.code_generator.generate_field_string(
-            field_name=sanitized_name,
-            pandera_type=pandera_type.__name__,
-            properties=properties,
-            original_column_name=column,
-            needs_alias=not is_valid_name,
+        For backward compatibility, delegates to pandas generator.
+        """
+        return self._pandas_generator._generate_field(
+            df, column, include_examples, detect_patterns
         )
 
-        # Add pattern comment if detected
-        if properties.get("pattern_name"):
-            field_str += f"  # pattern: {properties['pattern_name']}"
-
-        return field_str
-
     def _generate_implementation_example(self, model_name: str, source_file: Path) -> str:
-        """Generate example implementation code"""
-        return f"""# Example implementation
+        """
+        Generate example implementation code.
 
+        For backward compatibility, delegates to pandas generator.
+        """
+        return self._pandas_generator._generate_implementation_example(
+            model_name, source_file
+        )
 
-if __name__ == "__main__":
-    from pathlib import Path
-    import pandas as pd
+    @classmethod
+    def create_for_spark(cls, llm_api_key: Optional[str] = None, sample_size: Optional[int] = 10000):
+        """
+        Create a ModelGenerator configured for Spark DataFrames.
 
-    # Load the data
-    file_path = Path("{source_file.absolute()}")
+        Args:
+            llm_api_key: Optional API key for LLM enrichment
+            sample_size: Number of rows to sample for analysis
 
-    # Read file based on extension
-    if file_path.suffix == ".csv":
-        df = pd.read_csv(file_path)
-    elif file_path.suffix in [".xlsx", ".xls"]:
-        df = pd.read_excel(file_path)
-    elif file_path.suffix == ".parquet":
-        df = pd.read_parquet(file_path)
-    elif file_path.suffix == ".json":
-        df = pd.read_json(file_path)
-    else:
-        raise ValueError(f"Unsupported file type: {source_file.suffix}")
+        Returns:
+            ModelGenerator instance configured for Spark
+        """
+        from .spark.spark_generator import SparkGenerator
 
-    # Validate the DataFrame
-    validated_df = {model_name}.validate(df)
-    print(f"Successfully validated {{len(validated_df)}} rows")
-"""
+        generator = cls(llm_api_key=llm_api_key, backend="spark")
+        generator._spark_generator = SparkGenerator(
+            llm_api_key=llm_api_key,
+            sample_size=sample_size
+        )
+        return generator
+
+    @classmethod
+    def create_for_databricks(
+        cls,
+        host: Optional[str] = None,
+        token: Optional[str] = None,
+        cluster_id: Optional[str] = None,
+        catalog: Optional[str] = None,
+        schema: Optional[str] = None,
+        llm_api_key: Optional[str] = None,
+        sample_size: Optional[int] = 10000,
+    ):
+        """
+        Create a ModelGenerator configured for Databricks.
+
+        Args:
+            host: Databricks workspace URL
+            token: Databricks personal access token
+            cluster_id: ID of the compute cluster
+            catalog: Unity Catalog name
+            schema: Schema/database name
+            llm_api_key: Optional API key for LLM enrichment
+            sample_size: Number of rows to sample for analysis
+
+        Returns:
+            DatabricksGenerator instance
+        """
+        from .databricks.generator import DatabricksGenerator
+
+        return DatabricksGenerator(
+            host=host,
+            token=token,
+            cluster_id=cluster_id,
+            catalog=catalog,
+            schema=schema,
+            llm_api_key=llm_api_key,
+            sample_size=sample_size
+        )
