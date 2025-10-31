@@ -57,6 +57,11 @@ class TestSparkFieldAnalyzer:
 
     def test_analyze_column_numeric(self):
         """Test analyzing a numeric Spark column"""
+        try:
+            import pyspark.sql.functions as F
+        except ImportError:
+            pytest.skip("PySpark not available")
+
         with patch('pyspark.sql.functions') as mock_f:
             # Create mock DataFrame and column
             mock_df = Mock()
@@ -231,31 +236,36 @@ class TestSparkGenerator:
 class TestDatabricksConnector:
     """Test Databricks connector functionality"""
 
-    @patch('pyspark.sql.SparkSession')
-    def test_get_spark_session(self, mock_spark_session_class):
+    def test_get_spark_session(self):
         """Test creating Spark session for Databricks"""
+        try:
+            from pyspark.sql import SparkSession
+        except ImportError:
+            pytest.skip("PySpark not available")
+
         from pandera_forge.databricks.connector import DatabricksConnector
 
-        # Mock SparkSession builder
-        mock_builder = Mock()
-        mock_session = Mock()
-        mock_sql_result = Mock()
-        mock_session.sql.return_value = mock_sql_result
-        mock_builder.getOrCreate.return_value = mock_session
-        mock_builder.appName.return_value = mock_builder
-        mock_builder.config.return_value = mock_builder
-        mock_spark_session_class.builder = mock_builder
+        with patch('pyspark.sql.SparkSession') as mock_spark_session_class:
+            # Mock SparkSession builder
+            mock_builder = Mock()
+            mock_session = Mock()
+            mock_sql_result = Mock()
+            mock_session.sql.return_value = mock_sql_result
+            mock_builder.getOrCreate.return_value = mock_session
+            mock_builder.appName.return_value = mock_builder
+            mock_builder.config.return_value = mock_builder
+            mock_spark_session_class.builder = mock_builder
 
-        connector = DatabricksConnector(
-            host="https://test.cloud.databricks.com",
-            token="test-token",
-            cluster_id="test-cluster"
-        )
+            connector = DatabricksConnector(
+                host="https://test.cloud.databricks.com",
+                token="test-token",
+                cluster_id="test-cluster"
+            )
 
-        # Test in non-Databricks environment
-        with patch.object(connector, '_is_databricks_runtime', return_value=False):
-            session = connector.get_spark_session()
-            assert session == mock_session
+            # Test in non-Databricks environment
+            with patch.object(connector, '_is_databricks_runtime', return_value=False):
+                session = connector.get_spark_session()
+                assert session == mock_session
 
     def test_is_databricks_runtime(self):
         """Test detecting Databricks runtime environment"""
