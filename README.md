@@ -1,6 +1,6 @@
 # Pandera Forge 🔨
 
-**Pandera Forge** is a deterministic generator for [Pandera](https://pandera.readthedocs.io/) DataFrameModels from pandas DataFrames. It automatically creates exhaustive, type-safe schema definitions without relying on manual work or LLMs, providing a reliable gauge of your dataset's characteristics including statistics, nullability, uniqueness, and patterns.
+**Pandera Forge** is a deterministic generator for [Pandera](https://pandera.readthedocs.io/) DataFrameModels from pandas, Spark, and Databricks DataFrames. It automatically creates exhaustive, type-safe schema definitions without relying on manual work or LLMs, providing a reliable gauge of your dataset's characteristics including statistics, nullability, uniqueness, and patterns.
 
 ## Rationale
 
@@ -8,12 +8,14 @@ I have found that when working with LLM's they often fail when working with pyth
 
 ## Features
 
-- **Automatic Schema Generation**: Convert any pandas DataFrame into a Pandera DataFrameModel
+- **Automatic Schema Generation**: Convert pandas, Spark, or Databricks DataFrames into Pandera DataFrameModels
+- **Multi-Backend Support**: Works with pandas, Apache Spark, and Databricks
 - **Comprehensive Field Analysis**: Detects nullability, uniqueness, min/max values, and data patterns
 - **Pattern Detection**: Identifies common patterns in string columns (emails, URLs, phone numbers, etc.)
 - **Type Safety**: Generates properly typed fields with appropriate constraints
 - **Column Name Sanitization**: Handles problematic column names (spaces, special characters, keywords)
 - **Validation**: Validates generated models against source data
+- **Databricks Integration**: Direct Unity Catalog support and Delta Lake integration
 - **Extensible**: Optional LLM enrichment for enhanced pattern detection
 
 ## Installation
@@ -25,6 +27,16 @@ pip install pandera-forge
 For LLM enrichment features:
 ```bash
 pip install pandera-forge[llm]
+```
+
+For Apache Spark support:
+```bash
+pip install pandera-forge[spark]
+```
+
+For full Databricks integration:
+```bash
+pip install pandera-forge[databricks]
 ```
 
 ## Quick Start
@@ -136,16 +148,61 @@ model_code = generator.generate(df, model_name="EnrichedModel")
 2. Start Ollama: `ollama serve`
 3. Pull a model: `ollama pull llama3.2`
 
+### Databricks and Spark Support
+
+Pandera Forge now supports Apache Spark DataFrames and Databricks:
+
+```python
+from pandera_forge import ModelGenerator
+
+# For Spark DataFrames
+generator = ModelGenerator.create_for_spark()
+spark_df = spark.table("my_table")
+model_code = generator.generate(spark_df, model_name="MyModel")
+
+# For Databricks with Unity Catalog
+from pandera_forge.databricks import DatabricksGenerator
+
+generator = DatabricksGenerator(
+    host="https://your-workspace.cloud.databricks.com",
+    token="your-token",
+    catalog="main",
+    schema="default"
+)
+
+# Generate from a table
+model_code = generator.from_table("customers")
+
+# Generate for all tables in a catalog
+models = generator.generate_for_catalog()
+```
+
+For complete Databricks documentation, see [docs/DATABRICKS.md](docs/DATABRICKS.md).
+
 ## API Reference
 
 ### ModelGenerator
 
-Main class for generating Pandera models.
+Main class for generating Pandera models. Supports pandas, Spark, and Databricks DataFrames.
 
 ```python
 ModelGenerator(
     llm_api_key: Optional[str] = None,
-    llm_enricher: Optional[LLMEnricher] = None
+    llm_enricher: Optional[LLMEnricher] = None,
+    backend: str = "pandas"  # "pandas", "spark", or "auto"
+)
+```
+
+**Factory Methods:**
+
+```python
+# Create generator for Spark DataFrames
+ModelGenerator.create_for_spark(llm_api_key=None, sample_size=10000)
+
+# Create generator for Databricks
+ModelGenerator.create_for_databricks(
+    host=None, token=None, cluster_id=None,
+    catalog=None, schema=None, llm_api_key=None
 )
 ```
 
