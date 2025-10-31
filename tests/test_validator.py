@@ -71,7 +71,10 @@ class TestModel(DataFrameModel):
 
         is_valid, error = ModelValidator.validate_against_dataframe(model_code, "TestModel", df)
 
-        assert is_valid is True
+        if not is_valid:
+            print(f"\n=== Validation Error ===\n{error}\n=======================")
+
+        assert is_valid is True, f"Validation failed: {error}"
         assert error is None
 
     def test_validate_against_dataframe_class_not_found(self):
